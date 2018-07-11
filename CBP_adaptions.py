@@ -139,12 +139,9 @@ class CoinbaseProAdaptedWS(WebSocketApp):
             dispatcher.read(self.sock.sock, read, check)
 
         # I've shuffled some of the exception handling to better suit our needs
-        except (KeyboardInterrupt, SystemExit) as e:
+        except (KeyboardInterrupt, SystemExit, Exception) as e:
             self._callback(self.on_error, e)
             if isinstance(e, SystemExit):
                 # propagate SystemExit further
                 raise
-            teardown()
-        except Exception as e:
-            self._callback(self.on_error, e)
             teardown()
