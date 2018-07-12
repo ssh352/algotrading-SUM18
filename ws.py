@@ -12,17 +12,21 @@ from json import dumps, loads
 from pprint import pprint
 
 
-def on_open(ws: CoinbaseProAdaptedWS):
-    if not ws.symbol:
-        raise RuntimeError("You must set a symbol to subscribe to")  # TODO make this work for multiple symbols
+def on_open(ws: CoinbaseProAdaptedWS, symbols: list):
     params = {
         "type": "subscribe",
-        "product_ids": [
-            ws.symbol
-        ],
         "channels": [
-            "level2",
-            "heartbeat",
+            {
+                "name": "level2",
+                "product_ids":
+                    symbols
+            },
+            {
+                "name": "heartbeat",
+                "product_ids": [
+                    "ETH-USD"
+                ],
+            },
         ]
     }
     ws.send(dumps(params))
@@ -37,7 +41,8 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
         ws.last_heartbeat = time.time()
     elif j["type"] == "l2update":
         for change in j["changes"]:
-            print(",".join([str(i) for i in change]), file=ws.f)  # save each update in csv format with trailing \n
+            # save each update in corresponding csv, formatting with trailing \n via print()
+            print(",".join([str(i) for i in change]), file=ws.f_dict[j["product_id"]])
     pprint(j)
 
 
@@ -61,8 +66,8 @@ if __name__ == "__main__":
                               on_open=on_open,
                               on_message=on_message,
                               on_error=on_error,
-                              on_close=on_close)
-    ws.set_symbol("BTC-USD")
+                              on_close=on_close,
+                              symbols=["BTC-USD", "ETH-USD", "LTC-USD", "BCH-USD"])
     try:
         while True:
             ws.run_forever()

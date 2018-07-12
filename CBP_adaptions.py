@@ -20,17 +20,15 @@ class HeartbeatSilentException(Exception):
 # heartbeat messages (coinbase does not seem to support ping-pong)
 class CoinbaseProAdaptedWS(WebSocketApp):
     def __init__(self, heartbeat_timeout=10, *args, **kwargs):
+        if "symbols" not in kwargs:
+            raise RuntimeError("You must provide the websocket with a list of symbols to subscribe to")
+        self.symbols = kwargs["symbols"]
+        del kwargs["symbols"]
         super(CoinbaseProAdaptedWS, self).__init__(*args, **kwargs)
-        self.symbol = None
         self.last_heartbeat = time.time()
         self.heartbeat_timeout = heartbeat_timeout
-        self.f = None  # TODO to make this work with multiple symbols we'll probably need to have a dict of file objects
-
-    def set_symbol(self, sym: str):
-        self.symbol = sym  # The symbol we'll be subscribing to TODO make this work for multiple symbols
-        # TODO don't just hardcode the level2 part, this should be adaptive based on the subscribed to channel
-        self.f = open("CBP_level2_{symbol}_{date}.csv".format(symbol=self.symbol, date=dt.utcnow().strftime(
-            "%Y%m%d")), "w")
+        self.f_dict = {sym: open("CBP_level2_{symbol}_{date}.csv".format(
+            symbol=sym, date=dt.utcnow().strftime("%Y%m%d")), "w") for sym in self.symbols}
 
     def run_forever(self, sockopt=None, sslopt=None,
                     ping_interval=0, ping_timeout=None,
@@ -99,7 +97,8 @@ class CoinbaseProAdaptedWS(WebSocketApp):
             if not dispatcher:
                 dispatcher = self.create_dispatcher(ping_timeout)
 
-            self._callback(self.on_open)
+            self._callback(self.on_open, self.symbols)
+            self.last_heartbeat = time.time()
 
             if ping_interval:
                 event = threading.Event()
