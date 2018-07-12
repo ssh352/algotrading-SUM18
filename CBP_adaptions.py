@@ -1,6 +1,7 @@
 
 from websocket import *
 import time
+from datetime import datetime as dt
 import threading
 import six
 
@@ -20,8 +21,16 @@ class HeartbeatSilentException(Exception):
 class CoinbaseProAdaptedWS(WebSocketApp):
     def __init__(self, heartbeat_timeout=10, *args, **kwargs):
         super(CoinbaseProAdaptedWS, self).__init__(*args, **kwargs)
+        self.symbol = None
         self.last_heartbeat = time.time()
         self.heartbeat_timeout = heartbeat_timeout
+        self.f = None  # TODO to make this work with multiple symbols we'll probably need to have a dict of file objects
+
+    def set_symbol(self, sym: str):
+        self.symbol = sym  # The symbol we'll be subscribing to TODO make this work for multiple symbols
+        # TODO don't just hardcode the level2 part, this should be adaptive based on the subscribed to channel
+        self.f = open("CBP_level2_{symbol}_{date}.csv".format(symbol=self.symbol, date=dt.utcnow().strftime(
+            "%Y%m%d")), "w")
 
     def run_forever(self, sockopt=None, sslopt=None,
                     ping_interval=0, ping_timeout=None,
@@ -138,10 +147,9 @@ class CoinbaseProAdaptedWS(WebSocketApp):
 
             dispatcher.read(self.sock.sock, read, check)
 
-        # I've shuffled some of the exception handling to better suit our needs
         except (KeyboardInterrupt, SystemExit, Exception) as e:
             self._callback(self.on_error, e)
-            if isinstance(e, SystemExit):
+            if isinstance(e, SystemExit) or isinstance(e, KeyboardInterrupt):
                 # propagate SystemExit further
                 raise
             teardown()
