@@ -2,6 +2,7 @@
 from websocket import *
 import time
 from datetime import datetime as dt
+from typing import Dict
 import threading
 import six
 
@@ -22,13 +23,25 @@ class CoinbaseProAdaptedWS(WebSocketApp):
     def __init__(self, heartbeat_timeout=10, *args, **kwargs):
         if "symbols" not in kwargs:
             raise RuntimeError("You must provide the websocket with a list of symbols to subscribe to")
-        self.symbols = kwargs["symbols"]
-        del kwargs["symbols"]
+        if "subtype" not in kwargs:
+            raise RuntimeError("You must provide the subscription type from: level2, full")
+        self.symbols: Dict[str, str] = kwargs["symbols"]
+        self.subtype: Dict[str, str] = kwargs["subtype"]
+        del kwargs["symbols"], kwargs["subtype"]  # this is so that the base class doesnt freak out
         super(CoinbaseProAdaptedWS, self).__init__(*args, **kwargs)
-        self.last_heartbeat = time.time()
-        self.heartbeat_timeout = heartbeat_timeout
-        self.f_dict = {sym: open("CBP_level2_{symbol}_{date}.csv".format(
-            symbol=sym, date=dt.utcnow().strftime("%Y%m%d")), "w") for sym in self.symbols}
+        self.last_heartbeat: float = time.time()
+        self.heartbeat_timeout: int = heartbeat_timeout
+        if self.subtype == "level2":
+            self.f_dict: Dict[str, ] = {sym: open("CBP_{symbol}_level2_{date}.csv".format(
+                symbol=sym, date=dt.utcnow().strftime("%Y%m%d")), "w") for sym in self.symbols}
+        else:
+            full_msg_types = ["received", "open", "done", "match", "change", "activate"]
+            self.f_dict = {
+                sym: {m: open("CBP_{symbol}_full_{m}_{date}.csv".format(
+                                 m=m, symbol=sym, date=dt.utcnow().strftime("%Y%m%d")), "w") for m in full_msg_types
+                }
+                for sym in self.symbols
+            }
 
     def run_forever(self, sockopt=None, sslopt=None,
                     ping_interval=0, ping_timeout=None,
@@ -97,7 +110,7 @@ class CoinbaseProAdaptedWS(WebSocketApp):
             if not dispatcher:
                 dispatcher = self.create_dispatcher(ping_timeout)
 
-            self._callback(self.on_open, self.symbols)
+            self._callback(self.on_open)
             self.last_heartbeat = time.time()
 
             if ping_interval:

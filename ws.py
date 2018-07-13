@@ -12,14 +12,14 @@ from json import dumps, loads
 from pprint import pprint
 
 
-def on_open(ws: CoinbaseProAdaptedWS, symbols: list):
+def on_open(ws: CoinbaseProAdaptedWS):
     params = {
         "type": "subscribe",
         "channels": [
             {
-                "name": "level2",
+                "name": ws.subtype,
                 "product_ids":
-                    symbols
+                    ws.symbols
             },
             {
                 "name": "heartbeat",
@@ -43,10 +43,14 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
         for change in j["changes"]:
             # save each update in corresponding csv, formatting with trailing \n via print()
             print(",".join([str(i) for i in change]), file=ws.f_dict[j["product_id"]])
+    # just going to assume full type otherwise
+    else:
+        # TODO fix this... Because the dict is a hashmap iterating like this does not have guaranteed order (BAD!)
+        print(",".join([str(v) for k, v in j.items()]), file=ws.f_dict[j["product_id"]][j["type"]])
     pprint(j)
 
 
-def on_error(ws: CoinbaseProAdaptedWS, error):
+def on_error(ws: CoinbaseProAdaptedWS, error: BaseException):
     logging.warning(error)
     time.sleep(COINBASE_PRO_MAX_QUERY_FREQ)
     if not isinstance(error, KeyboardInterrupt) and not isinstance(error, SystemExit):
@@ -67,7 +71,8 @@ if __name__ == "__main__":
                               on_message=on_message,
                               on_error=on_error,
                               on_close=on_close,
-                              symbols=["BTC-USD", "ETH-USD", "LTC-USD", "BCH-USD"])
+                              symbols=["BTC-USD", "ETH-USD", "LTC-USD", "BCH-USD"],
+                              subtype="full")
     try:
         while True:
             ws.run_forever()
