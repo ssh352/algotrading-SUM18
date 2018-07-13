@@ -1,10 +1,14 @@
 
-from websocket import *
 import time
+
+from websocket import *
 from datetime import datetime as dt
+from datetime import date as d
+from dateutil import parser as dparser
 from typing import Dict, List
 import threading
 import six
+import os
 
 
 COINBASE_PRO_MAX_QUERY_FREQ = 4  # Highest frequency we're allowed to query at before potential IP ban
@@ -30,7 +34,7 @@ class CoinbaseProAdaptedWS(WebSocketApp):
 
         # these will be used to write the contents of the json response in correct order to csv
         self.rec_fields = ["type", "time", "product_id", "sequence", "order_id", "funds", "size", "price", "side",
-                            "order_type"]
+                           "order_type"]
         self.open_fields = ["type", "time", "product_id", "sequence", "order_id", "price", "remaining_size", "side"]
         self.done_fields = ["type", "time", "product_id", "sequence", "price", "order_id", "reason", "side",
                             "remaining_size"]
@@ -41,16 +45,35 @@ class CoinbaseProAdaptedWS(WebSocketApp):
         super(CoinbaseProAdaptedWS, self).__init__(*args, **kwargs)
         self.last_heartbeat: float = time.time()
         self.heartbeat_timeout: int = heartbeat_timeout
+        utcnow = dt.utcnow()
+        self.save_date = d(utcnow.year, utcnow.month, utcnow.day)
 
         # initializing file dictionary based on level2 vs full, full is 2D because of the diff message types
         if self.subtype == "level2":
-            self.f_dict: Dict[str, ] = {sym: open("CBP_{symbol}_level2_{date}.csv".format(
-                symbol=sym, date=dt.utcnow().strftime("%Y%m%d")), "w") for sym in self.symbols}
+            if not os.path.exists("level2"):
+                os.mkdir("level2")
+                os.chdir("level2")
+            for sym in self.symbols:
+                if not os.path.exists(sym):
+                    os.mkdir(sym)
+            self.f_dict = {sym: open("symbol/CBP_{symbol}_level2_{date}.csv".format(
+                symbol=sym, date=self.save_date.strftime("%Y%m%d")), "w") for sym in self.symbols}
         else:
-            full_msg_types = ["received", "open", "done", "match"]
+            if not os.path.exists("full"):
+                os.mkdir("full")
+            os.chdir("full")
+            self.full_msg_types = ["received", "open", "done", "match"]
+            # Setting up folder structure st each sym has a folder for each day containing each of the msg types
+            for sym in self.symbols:
+                if not os.path.exists(sym):
+                    os.mkdir(sym)
+                if not os.path.exists("{s}/{d}".format(s=sym, d=self.save_date.strftime("%Y%m%d"))):
+                    os.mkdir("{s}/{d}".format(s=sym, d=self.save_date.strftime("%Y%m%d")))
+
             self.f_dict = {
-                sym: {m: open("CBP_{symbol}_full_{m}_{date}.csv".format(
-                                 m=m, symbol=sym, date=dt.utcnow().strftime("%Y%m%d")), "w") for m in full_msg_types
+                sym: {m: open("{symbol}/{date}/CBP_{symbol}_full_{m}_{date}.csv".format(
+                                 m=m, symbol=sym, date=self.save_date.strftime("%Y%m%d")), "w")
+                      for m in self.full_msg_types
                 }
                 for sym in self.symbols
             }

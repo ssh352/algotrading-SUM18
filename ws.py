@@ -5,6 +5,9 @@ import time
 import logging
 import os
 
+from datetime import date as d
+from datetime import datetime as dt
+from dateutil import parser as dparser
 from CBP_adaptions import CoinbaseProAdaptedWS, COINBASE_PRO_MAX_QUERY_FREQ
 from json import dumps, loads
 from pprint import pprint
@@ -36,6 +39,22 @@ def on_open(ws: CoinbaseProAdaptedWS):
 def on_message(ws: CoinbaseProAdaptedWS, message: str):
     j = loads(message)
     t = j["type"]
+    # Close current files and open new ones for a new day once midnight comes
+    if t in ws.full_msg_types:
+        if dparser.parse(j["time"]).day != ws.save_date.day:
+            n = dt.utcnow()
+            ws.save_date = d(n.year, n.month, n.day)
+            for sym, f in ws.f_dict:
+                f.close()
+                if not os.path.exists("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d"))):
+                    os.mkdir("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d")))
+                ws.f_dict = {
+                    sym: {m: open("{symbol}/{date}/CBP_{symbol}_full_{m}_{date}.csv".format(
+                        m=m, symbol=sym, date=ws.save_date.strftime("%Y%m%d")), "w")
+                        for m in ws.full_msg_types
+                    }
+                    for sym in ws.symbols
+                }
     if t == "heartbeat":
         ws.last_heartbeat = time.time()
     elif t == "l2update":
