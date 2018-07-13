@@ -1,5 +1,3 @@
-# stackoverflow link I used VVV
-# https://stackoverflow.com/questions/47999982/websocket-to-useable-data-in-python-get-price-from-gdax-websocket-feed
 # websocket dependency VVV
 # https://pypi.org/project/websocket-client/
 
@@ -37,16 +35,21 @@ def on_open(ws: CoinbaseProAdaptedWS):
 # TODO make this automatically handle the change to output file on date rollover (ie file should change at 12AM UTC)
 def on_message(ws: CoinbaseProAdaptedWS, message: str):
     j = loads(message)
-    if j["type"] == "heartbeat":
+    t = j["type"]
+    if t == "heartbeat":
         ws.last_heartbeat = time.time()
-    elif j["type"] == "l2update":
+    elif t == "l2update":
         for change in j["changes"]:
             # save each update in corresponding csv, formatting with trailing \n via print()
             print(",".join([str(i) for i in change]), file=ws.f_dict[j["product_id"]])
-    # just going to assume full type otherwise
-    else:
-        # TODO fix this... Because the dict is a hashmap iterating like this does not have guaranteed order (BAD!)
-        print(",".join([str(v) for k, v in j.items()]), file=ws.f_dict[j["product_id"]][j["type"]])
+    elif t == "received":
+        ws.handle_received(j)
+    elif t == "open":
+        ws.handle_open(j)
+    elif t == "done":
+        ws.handle_done(j)
+    elif t == "match":
+        ws.handle_match(j)
     pprint(j)
 
 

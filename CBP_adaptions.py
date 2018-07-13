@@ -2,7 +2,7 @@
 from websocket import *
 import time
 from datetime import datetime as dt
-from typing import Dict
+from typing import Dict, List
 import threading
 import six
 
@@ -25,23 +25,58 @@ class CoinbaseProAdaptedWS(WebSocketApp):
             raise RuntimeError("You must provide the websocket with a list of symbols to subscribe to")
         if "subtype" not in kwargs:
             raise RuntimeError("You must provide the subscription type from: level2, full")
-        self.symbols: Dict[str, str] = kwargs["symbols"]
-        self.subtype: Dict[str, str] = kwargs["subtype"]
+        self.symbols: List[str] = kwargs["symbols"]
+        self.subtype: str = kwargs["subtype"]
+
+        # these will be used to write the contents of the json response in correct order to csv
+        self.rec_fields = ["type", "time", "product_id", "sequence", "order_id", "funds", "size", "price", "side",
+                            "order_type"]
+        self.open_fields = ["type", "time", "product_id", "sequence", "order_id", "price", "remaining_size", "side"]
+        self.done_fields = ["type", "time", "product_id", "sequence", "price", "order_id", "reason", "side",
+                            "remaining_size"]
+        self.match_fields = ["type", "trade_id", "sequence", "maker_order_id", "taker_order_id", "time",
+                             "product_id", "size", "price", "side"]
+
         del kwargs["symbols"], kwargs["subtype"]  # this is so that the base class doesnt freak out
         super(CoinbaseProAdaptedWS, self).__init__(*args, **kwargs)
         self.last_heartbeat: float = time.time()
         self.heartbeat_timeout: int = heartbeat_timeout
+
+        # initializing file dictionary based on level2 vs full, full is 2D because of the diff message types
         if self.subtype == "level2":
             self.f_dict: Dict[str, ] = {sym: open("CBP_{symbol}_level2_{date}.csv".format(
                 symbol=sym, date=dt.utcnow().strftime("%Y%m%d")), "w") for sym in self.symbols}
         else:
-            full_msg_types = ["received", "open", "done", "match", "change", "activate"]
+            full_msg_types = ["received", "open", "done", "match"]
             self.f_dict = {
                 sym: {m: open("CBP_{symbol}_full_{m}_{date}.csv".format(
                                  m=m, symbol=sym, date=dt.utcnow().strftime("%Y%m%d")), "w") for m in full_msg_types
                 }
                 for sym in self.symbols
             }
+            # Writing the header for each csv
+            for sym in self.symbols:
+                print(",".join(self.rec_fields), file=self.f_dict[sym]["received"])
+                print(",".join(self.open_fields), file=self.f_dict[sym]["open"])
+                print(",".join(self.done_fields), file=self.f_dict[sym]["done"])
+                print(",".join(self.match_fields), file=self.f_dict[sym]["match"])
+
+    def handle_received(self, json_obj):
+        # attempting to access values by sequential key, if key doesn't exist, add empty value
+        print(",".join([str(i) for i in ["" if k not in json_obj else json_obj[k] for k in self.rec_fields]]),
+              file=self.f_dict[json_obj["product_id"]][json_obj["type"]])
+
+    def handle_open(self, json_obj):
+        print(",".join([str(i) for i in [json_obj[k] for k in self.open_fields]]),
+              file=self.f_dict[json_obj["product_id"]][json_obj["type"]])
+
+    def handle_done(self, json_obj):
+        print(",".join([str(i) for i in ["" if k not in json_obj else json_obj[k] for k in self.done_fields]]),
+              file=self.f_dict[json_obj["product_id"]][json_obj["type"]])
+
+    def handle_match(self, json_obj):
+        print(",".join([str(i) for i in [json_obj[k] for k in self.match_fields]]),
+              file=self.f_dict[json_obj["product_id"]][json_obj["type"]])
 
     def run_forever(self, sockopt=None, sslopt=None,
                     ping_interval=0, ping_timeout=None,
