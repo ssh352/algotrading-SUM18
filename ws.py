@@ -40,21 +40,19 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
     j = loads(message)
     t = j["type"]
     # Close current files and open new ones for a new day once midnight comes
-    if t in ws.full_msg_types:
-        if dparser.parse(j["time"]).day != ws.save_date.day:
-            n = dt.utcnow()
-            ws.save_date = d(n.year, n.month, n.day)
-            for sym, f in ws.f_dict:
+    if t in ws.full_msg_types and dparser.parse(j["time"]).day != ws.save_date.day:
+        n = dt.utcnow()
+        ws.save_date = d(n.year, n.month, n.day)
+        for sym, dic in ws.f_dict.items():
+            for k, f in dic.items():
                 f.close()
-                if not os.path.exists("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d"))):
-                    os.mkdir("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d")))
-                ws.f_dict = {
-                    sym: {m: open("{symbol}/{date}/CBP_{symbol}_full_{m}_{date}.csv".format(
-                        m=m, symbol=sym, date=ws.save_date.strftime("%Y%m%d")), "w")
-                        for m in ws.full_msg_types
-                    }
-                    for sym in ws.symbols
+            if not os.path.exists("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d"))):
+                os.mkdir("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d")))
+            ws.f_dict[sym] = {m: open("{symbol}/{date}/CBP_{symbol}_full_{m}_{date}.csv".format(
+                    m=m, symbol=sym, date=ws.save_date.strftime("%Y%m%d")), "w")
+                    for m in ws.full_msg_types
                 }
+
     if t == "heartbeat":
         ws.last_heartbeat = time.time()
     elif t == "l2update":
