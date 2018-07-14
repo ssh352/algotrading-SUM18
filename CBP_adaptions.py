@@ -84,21 +84,39 @@ class CoinbaseProAdaptedWS(WebSocketApp):
                 print(",".join(self.done_fields), file=self.f_dict[sym]["done"])
                 print(",".join(self.match_fields), file=self.f_dict[sym]["match"])
 
+    # handlers for each type of message that may be sent via the 'full' channel (excepting change, accept)
+
     def handle_received(self, json_obj):
+        """
+        handles messages from 'full' channel of type 'received'
+        json_obj: the JSON object received by the websocket, should be of type dict
+        """
         # attempting to access values by sequential key, if key doesn't exist, add empty value
-        print(",".join([str(i) for i in ["" if k not in json_obj else json_obj[k] for k in self.rec_fields]]),
+        print(",".join(["" if k not in json_obj else str(json_obj[k]) for k in self.rec_fields]),
               file=self.f_dict[json_obj["product_id"]][json_obj["type"]])
 
     def handle_open(self, json_obj):
-        print(",".join([str(i) for i in [json_obj[k] for k in self.open_fields]]),
+        """
+        handles messages from 'full' channel of type 'open'
+        json_obj: the JSON object received by the websocket, should be of type dict
+        """
+        print(",".join([str(json_obj[k]) for k in self.open_fields]),
               file=self.f_dict[json_obj["product_id"]][json_obj["type"]])
 
     def handle_done(self, json_obj):
-        print(",".join([str(i) for i in ["" if k not in json_obj else json_obj[k] for k in self.done_fields]]),
+        """
+        handles messages from 'full' channel of type 'done'
+        json_obj: the JSON object received by the websocket, should be of type dict
+        """
+        print(",".join(["" if k not in json_obj else str(json_obj[k]) for k in self.done_fields]),
               file=self.f_dict[json_obj["product_id"]][json_obj["type"]])
 
     def handle_match(self, json_obj):
-        print(",".join([str(i) for i in [json_obj[k] for k in self.match_fields]]),
+        """
+        handles messages from 'full' channel of type 'match'
+        json_obj: the JSON object received by the websocket, should be of type dict
+        """
+        print(",".join([str(json_obj[k]) for k in self.match_fields]),
               file=self.f_dict[json_obj["product_id"]][json_obj["type"]])
 
     def run_forever(self, sockopt=None, sslopt=None,
