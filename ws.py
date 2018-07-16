@@ -35,12 +35,25 @@ def on_open(ws: CoinbaseProAdaptedWS):
     logging.info("Coinbase connection opened")
 
 
-# TODO make this automatically handle the change to output file on date rollover (ie file should change at 12AM UTC)
 def on_message(ws: CoinbaseProAdaptedWS, message: str):
+    """
+    Will log with level=INFO with message G<ID:int> G (got) with an integer ID detailed as follows:
+    0: heartbeat
+    1: full message type 'received'
+    2: full message type 'open'
+    3: full message type 'done'
+    4: full message type 'match'
+    5: l2update
+
+    :param ws:
+    :param message:
+    :return:
+    """
     j = loads(message)
     t = j["type"]
     # Close current files and open new ones for a new day once midnight comes
     if t in ws.full_msg_types and dparser.parse(j["time"]).day != ws.save_date.day:
+        logging.warning("Msg day differs from save day, attempting rollover")
         n = dt.utcnow()
         ws.save_date = d(n.year, n.month, n.day)
         for sym, dic in ws.f_dict.items():
@@ -54,20 +67,26 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
                 }
 
     if t == "heartbeat":
+        logging.info("G0")
         ws.last_heartbeat = time.time()
     elif t == "l2update":
+        logging.info("G5")
         for change in j["changes"]:
             # save each update in corresponding csv, formatting with trailing \n via print()
             print(",".join([str(i) for i in change]), file=ws.f_dict[j["product_id"]])
     elif t == "received":
+        logging.info("G1")
         ws.handle_received(j)
     elif t == "open":
+        logging.info("G2")
         ws.handle_open(j)
     elif t == "done":
+        logging.info("G3")
         ws.handle_done(j)
     elif t == "match":
+        logging.info("G4")
         ws.handle_match(j)
-    pprint(j)
+    # pprint(j)
 
 
 def on_error(ws: CoinbaseProAdaptedWS, error: BaseException):
@@ -84,8 +103,12 @@ def on_close(ws: CoinbaseProAdaptedWS):
 
 
 if __name__ == "__main__":
+    logname = "testing.log" # Change this to whatever you want
     logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"),
-                        format="%(asctime)s;%(levelname)s;%(message)s")
+                        format="%(asctime)s|%(levelname)s|%(message)s",
+                        filename=logname, filemode="a")
+    root_logger = logging.getLogger()
+    root_logger.addHandler(logging.StreamHandler())
     ws = CoinbaseProAdaptedWS(url="wss://ws-feed.pro.coinbase.com",
                               on_open=on_open,
                               on_message=on_message,
@@ -93,8 +116,11 @@ if __name__ == "__main__":
                               on_close=on_close,
                               symbols=["BTC-USD", "ETH-USD", "LTC-USD", "BCH-USD"],
                               subtype="full")
+    logging.info("Socket initialized")
     try:
         while True:
+            logging.info("Entered run loop")
             ws.run_forever()
     except (KeyboardInterrupt, SystemExit) as e:
         logging.info("{} Interrupt processed, exiting...".format(type(e).__name__))
+        on_close(ws=ws)

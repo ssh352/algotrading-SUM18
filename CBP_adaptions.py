@@ -1,5 +1,6 @@
 
 import time
+import logging
 
 from websocket import *
 from datetime import datetime as dt
