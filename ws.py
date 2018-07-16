@@ -36,19 +36,6 @@ def on_open(ws: CoinbaseProAdaptedWS):
 
 
 def on_message(ws: CoinbaseProAdaptedWS, message: str):
-    """
-    Will log with level=INFO with message G<ID:int> G (got) with an integer ID detailed as follows:
-    0: heartbeat
-    1: full message type 'received'
-    2: full message type 'open'
-    3: full message type 'done'
-    4: full message type 'match'
-    5: l2update
-
-    :param ws:
-    :param message:
-    :return:
-    """
     j = loads(message)
     t = j["type"]
     # Close current files and open new ones for a new day once midnight comes
@@ -67,24 +54,24 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
                 }
 
     if t == "heartbeat":
-        logging.info("G0")
+        logging.info("heartbeat")
         ws.last_heartbeat = time.time()
     elif t == "l2update":
-        logging.info("G5")
+        # logging.info("G5")
         for change in j["changes"]:
             # save each update in corresponding csv, formatting with trailing \n via print()
             print(",".join([str(i) for i in change]), file=ws.f_dict[j["product_id"]])
     elif t == "received":
-        logging.info("G1")
+        # logging.info("G1")
         ws.handle_received(j)
     elif t == "open":
-        logging.info("G2")
+        # logging.info("G2")
         ws.handle_open(j)
     elif t == "done":
-        logging.info("G3")
+        # logging.info("G3")
         ws.handle_done(j)
     elif t == "match":
-        logging.info("G4")
+        # logging.info("G4")
         ws.handle_match(j)
     # pprint(j)
 
@@ -106,7 +93,8 @@ if __name__ == "__main__":
     logname = "testing.log" # Change this to whatever you want
     logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"),
                         format="%(asctime)s|%(levelname)s|%(message)s",
-                        filename=logname, filemode="a")
+                        filename=logname, filemode="a",
+                        datefmt="%H:%M:%S")
     root_logger = logging.getLogger()
     root_logger.addHandler(logging.StreamHandler())
     ws = CoinbaseProAdaptedWS(url="wss://ws-feed.pro.coinbase.com",
