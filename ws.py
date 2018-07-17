@@ -4,6 +4,8 @@
 import time
 import logging
 import os
+import signal
+import sys
 
 from datetime import date as d
 from datetime import datetime as dt
@@ -11,6 +13,17 @@ from dateutil import parser as dparser
 from CBP_adaptions import CoinbaseProAdaptedWS, COINBASE_PRO_MAX_QUERY_FREQ
 from json import dumps, loads
 from pprint import pprint
+
+
+def sig_handler(signal, frame):
+    """
+    :param signal: signal, ie SIGKILL, SIGTERM, SIGABRT, etc.
+    :param frame: the current stackframe at signal receive time
+    :return: 
+    """
+    # this is an example of the new special formatted strings in python
+    logging.warning(f"Possible loss of connection, exiting with signal {signal.Signals(signal).name}")
+    sys.exit(1)
 
 
 def on_open(ws: CoinbaseProAdaptedWS):
@@ -31,7 +44,6 @@ def on_open(ws: CoinbaseProAdaptedWS):
         ]
     }
     ws.send(dumps(params))
-
     logging.info("Coinbase connection opened")
 
 
@@ -55,7 +67,10 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
 
     if t == "heartbeat":
         logging.info("heartbeat")
-        ws.last_heartbeat = time.time()
+        if type(ws.last_heartbeat) == float:
+            ws.last_heartbeat = time.time()
+        else:
+            ws.last_heartbeat.value = time.time()
     elif t == "l2update":
         # logging.info("G5")
         for change in j["changes"]:
@@ -89,21 +104,27 @@ def on_close(ws: CoinbaseProAdaptedWS):
     logging.info("Coinbase connection closed")
 
 
-if __name__ == "__main__":
-    logname = "testing.log" # Change this to whatever you want
+def main(**kwargs):
+    # registering the handler to handle killing of child
+    signal.signal(signal.SIGTERM, sig_handler)
+    signal.signal(signal.SIGKILL, sig_handler)
+
+    logname = "testing.log"  # Change this to whatever you want
     logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"),
                         format="%(asctime)s|%(levelname)s|%(message)s",
                         filename=logname, filemode="a",
                         datefmt="%H:%M:%S")
     root_logger = logging.getLogger()
     root_logger.addHandler(logging.StreamHandler())
+    # the **kwargs here unpacks any keyword arguments we passed as a dictionary (hashmap) to main()
     ws = CoinbaseProAdaptedWS(url="wss://ws-feed.pro.coinbase.com",
                               on_open=on_open,
                               on_message=on_message,
                               on_error=on_error,
                               on_close=on_close,
                               symbols=["BTC-USD", "ETH-USD", "LTC-USD", "BCH-USD"],
-                              subtype="full")
+                              subtype="full",
+                              **kwargs)
     logging.info("Socket initialized")
     try:
         while True:
@@ -112,3 +133,7 @@ if __name__ == "__main__":
     except (KeyboardInterrupt, SystemExit) as e:
         logging.info("{} Interrupt processed, exiting...".format(type(e).__name__))
         on_close(ws=ws)
+
+
+if __name__ == "__main__":
+    main()

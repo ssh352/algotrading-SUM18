@@ -30,6 +30,10 @@ class CoinbaseProAdaptedWS(WebSocketApp):
             raise RuntimeError("You must provide the websocket with a list of symbols to subscribe to")
         if "subtype" not in kwargs:
             raise RuntimeError("You must provide the subscription type from: level2, full")
+        if "shared_beat" in kwargs:
+            self.last_heartbeat = kwargs["shared_beat"]
+        else:
+            self.last_heartbeat = time.time()
         self.symbols: List[str] = kwargs["symbols"]
         self.subtype: str = kwargs["subtype"]
 
@@ -42,9 +46,11 @@ class CoinbaseProAdaptedWS(WebSocketApp):
         self.match_fields = ["type", "trade_id", "sequence", "maker_order_id", "taker_order_id", "time",
                              "product_id", "size", "price", "side"]
 
-        del kwargs["symbols"], kwargs["subtype"]  # this is so that the base class doesnt freak out
+        if "shared_beat" in kwargs:
+            del kwargs["shared_beat"]
+        del kwargs["symbols"], kwargs["subtype"]  # this is so that the base class doesnt freak
+        #  out
         super(CoinbaseProAdaptedWS, self).__init__(*args, **kwargs)
-        self.last_heartbeat: float = time.time()
         self.heartbeat_timeout: int = heartbeat_timeout
         utcnow = dt.utcnow()
         self.save_date = d(utcnow.year, utcnow.month, utcnow.day)
