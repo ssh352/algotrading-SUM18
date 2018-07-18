@@ -64,7 +64,7 @@ class CoinbaseProAdaptedWS(WebSocketApp):
                 if not os.path.exists(sym):
                     os.mkdir(sym)
             self.f_dict = {sym: open("symbol/CBP_{symbol}_level2_{date}.csv".format(
-                symbol=sym, date=self.save_date.strftime("%Y%m%d")), "w") for sym in self.symbols}
+                symbol=sym, date=self.save_date.strftime("%Y%m%d")), "a") for sym in self.symbols}
         else:
             if not os.path.exists("full"):
                 os.mkdir("full")

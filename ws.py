@@ -17,7 +17,7 @@ from pprint import pprint
 
 def sig_handler(signal, frame):
     """
-    :param signal: signal, ie SIGKILL, SIGTERM, SIGABRT, etc.
+    :param signal: signal, ie SIGTERM, SIGABRT, etc. (note you can't actually catch SIGKILL)
     :param frame: the current stackframe at signal receive time
     :return: 
     """
@@ -61,7 +61,7 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
             if not os.path.exists("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d"))):
                 os.mkdir("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d")))
             ws.f_dict[sym] = {m: open("{symbol}/{date}/CBP_{symbol}_full_{m}_{date}.csv".format(
-                    m=m, symbol=sym, date=ws.save_date.strftime("%Y%m%d")), "w")
+                    m=m, symbol=sym, date=ws.save_date.strftime("%Y%m%d")), "a")
                     for m in ws.full_msg_types
                 }
 
@@ -107,7 +107,6 @@ def on_close(ws: CoinbaseProAdaptedWS):
 def main(**kwargs):
     # registering the handler to handle killing of child
     signal.signal(signal.SIGTERM, sig_handler)
-    signal.signal(signal.SIGKILL, sig_handler)
 
     logname = "testing.log"  # Change this to whatever you want
     logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"),
