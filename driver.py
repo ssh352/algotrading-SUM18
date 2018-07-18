@@ -13,7 +13,7 @@ def SocketLoopFactory() -> Tuple[mp.Process, mp.Value]:
     :return: tuple of listening process and the variable we will store the time of least heartbeat in
     """
     v = mp.Value(c_double, time.time())
-    return mp.Process(target=ws.main(), daemon=True, kwargs={"shared_beat": v}), v
+    return mp.Process(target=ws.main(), kwargs={"shared_beat": v}), v
 
 def main():
     p, beat = SocketLoopFactory()
@@ -22,12 +22,12 @@ def main():
         while p.is_alive():
             time.sleep(1)
             # this almost certainly signals loss of heartbeat, thus we must kill child and spawn new process
-            if time.time() - beat.value > 10:
+            if time.time() - beat.value > 10 and p.is_alive():
                 p.terminate()
                 p, beat = SocketLoopFactory()
                 p.start()
-    except:
-        print('caught')
+    except Exception as e:
+        print(e)
     p.terminate()
 
 

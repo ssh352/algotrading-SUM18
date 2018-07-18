@@ -193,7 +193,7 @@ class CoinbaseProAdaptedWS(WebSocketApp):
                 dispatcher = self.create_dispatcher(ping_timeout)
 
             self._callback(self.on_open)
-            self.last_heartbeat = time.time()
+            # self.last_heartbeat = time.time()
 
             if ping_interval:
                 event = threading.Event()
@@ -235,9 +235,6 @@ class CoinbaseProAdaptedWS(WebSocketApp):
                         and time.time() - self.last_ping_tm > ping_timeout \
                         and self.last_ping_tm - self.last_pong_tm > ping_timeout:
                     raise WebSocketTimeoutException("ping/pong timed out")
-                dur = time.time() - self.last_heartbeat
-                if dur > self.heartbeat_timeout:
-                    raise HeartbeatSilentException("No heartbeat for {} seconds".format(dur))
                 return True
 
             dispatcher.read(self.sock.sock, read, check)
