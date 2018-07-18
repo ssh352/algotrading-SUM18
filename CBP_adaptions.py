@@ -48,8 +48,7 @@ class CoinbaseProAdaptedWS(WebSocketApp):
 
         if "shared_beat" in kwargs:
             del kwargs["shared_beat"]
-        del kwargs["symbols"], kwargs["subtype"]  # this is so that the base class doesnt freak
-        #  out
+        del kwargs["symbols"], kwargs["subtype"]  # this is so that the base class doesnt freak out
         super(CoinbaseProAdaptedWS, self).__init__(*args, **kwargs)
         self.heartbeat_timeout: int = heartbeat_timeout
         utcnow = dt.utcnow()
