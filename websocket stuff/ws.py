@@ -16,7 +16,6 @@ from datetime import datetime as dt
 from dateutil import parser as dparser
 from CBP_adaptions import CoinbaseProAdaptedWS, COINBASE_PRO_MAX_QUERY_FREQ
 from json import dumps, loads
-from pprint import pprint
 
 # defining the root_logger log instance as global so that we don't need to pass it around a bunch, bad style? maybe
 global root_logger
