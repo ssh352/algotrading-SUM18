@@ -1,6 +1,10 @@
 # websocket dependency VVV
 # https://pypi.org/project/websocket-client/
 
+# Dependencies installation notes:
+# websocket library: pip package name is "websocket-client"
+# dateutil (parsing) library: pip package name is "python-dateutil"
+
 import time
 import logging
 import os
