@@ -73,7 +73,7 @@ class CoinbaseProAdaptedWS(WebSocketApp):
             for sym in self.symbols:
                 if not os.path.exists(sym):
                     os.mkdir(sym)
-            #for all symbols, "sym" corresponds (:) to a file write stream to its csv file
+            #for all symbols, open corresponding (:) file write stream to csv file
             self.f_dict = {sym: open("symbol/CBP_{symbol}_level2_{date}.csv".format(
                         symbol=sym, date=self.save_date.strftime("%Y%m%d")), "a") 
                         for sym in self.symbols}
