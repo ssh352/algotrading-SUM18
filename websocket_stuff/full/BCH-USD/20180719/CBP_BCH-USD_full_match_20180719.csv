@@ -1,1 +1,0 @@
-type,trade_id,sequence,maker_order_id,taker_order_id,time,product_id,size,price,side
