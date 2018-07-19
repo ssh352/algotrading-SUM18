@@ -17,15 +17,16 @@ def SocketLoopFactory() -> Tuple[mp.Process, mp.Value]:
     v = mp.Value(c_double, time.time())
     return mp.Process(target=ws.main(), kwargs={"shared_beat": v}), v
 
+
 def main():
-    #p is actual ws process thread, beat is thread to store last heartbeat time
+    # p is actual ws process, beat is shared variable (between processes) to store last heartbeat time
     p, beat = SocketLoopFactory()
     try:
         p.start()
         while p.is_alive():
             time.sleep(1)
-            #if time between last heartbeat and current time is over 10, 
-            #probable loss of heartbeat, must kill child and spawn new process
+            # if time between last heartbeat and current time is over 10,
+            # probable loss of heartbeat, must kill child and spawn new process
             if time.time() - beat.value > 10 and p.is_alive():
                 p.terminate()
                 p, beat = SocketLoopFactory()

@@ -4,20 +4,14 @@ import logging
 from websocket import *
 from datetime import datetime as dt
 from datetime import date as d
-from dateutil import parser as dparser
-from typing import Dict, List
+from typing import List
 import threading
 import six
 import os
 
+
 # Highest frequency we're allowed to query at before potential IP ban
-COINBASE_PRO_MAX_QUERY_FREQ = 4 
-
-
-class HeartbeatSilentException(Exception):
-    # Raised when websocket has not received the heartbeat message for an extended time
-    # Pass statement does nothing, used when a statement is required
-    pass
+COINBASE_PRO_MAX_QUERY_FREQ = 4
 
 
 # Simple modification of the default run_forever() method
@@ -37,7 +31,7 @@ class CoinbaseProAdaptedWS(WebSocketApp):
         else:
             self.last_heartbeat = time.time()
 
-        #copy/set list of symbols and what level we want into instance
+        # copy/set list of symbols and what level we want into instance
         self.symbols: List[str] = kwargs["symbols"]
         self.subtype: str = kwargs["subtype"]
 
@@ -50,16 +44,16 @@ class CoinbaseProAdaptedWS(WebSocketApp):
         self.match_fields = ["type", "trade_id", "sequence", "maker_order_id", "taker_order_id", "time",
                              "product_id", "size", "price", "side"]
 
-        # base class dont have symbols and subtype for required kwargs
-        # delete uncessary kwarg stuff before we init the base webSocketApp class
+        # base class doesn't have symbols and subtype for required kwargs
+        # delete unnecessary kwarg stuff before we init the base webSocketApp class
         if "shared_beat" in kwargs:
             del kwargs["shared_beat"]
         del kwargs["symbols"], kwargs["subtype"] 
         
-        #init the base class to bind our on_open, on_message etc. functions
+        # init the base class to bind our on_open, on_message etc. functions
         super(CoinbaseProAdaptedWS, self).__init__(*args, **kwargs)
         
-        #variables used in file saving
+        # variables used in file saving
         utcnow = dt.utcnow()
         self.save_date = d(utcnow.year, utcnow.month, utcnow.day)
         self.heartbeat_timeout: int = heartbeat_timeout
@@ -73,7 +67,7 @@ class CoinbaseProAdaptedWS(WebSocketApp):
             for sym in self.symbols:
                 if not os.path.exists(sym):
                     os.mkdir(sym)
-            #for all symbols, open corresponding (:) file write stream to csv file
+            # for all symbols, open corresponding (:) file write stream to csv file
             self.f_dict = {sym: open("symbol/CBP_{symbol}_level2_{date}.csv".format(
                         symbol=sym, date=self.save_date.strftime("%Y%m%d")), "a") 
                         for sym in self.symbols}
