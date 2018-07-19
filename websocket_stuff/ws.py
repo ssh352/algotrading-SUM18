@@ -7,11 +7,12 @@ import sys
 from datetime import date as d
 from datetime import datetime as dt
 from dateutil import parser as dparser
-from CBP_adaptions import CoinbaseProAdaptedWS, COINBASE_PRO_MAX_QUERY_FREQ, SOCKET_PATH
+from CBP_adaptions import CoinbaseProAdaptedWS, COINBASE_PRO_MAX_QUERY_FREQ
 from json import dumps, loads
 
 # defining the root_logger log instance as global so that we don't need to pass it around a bunch, bad style? maybe
 global root_logger
+
 
 def sig_handler(sig, frame):
     """
@@ -57,10 +58,11 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
         # We have two log handlers, the one printing to stderr and the one printing to our file, we want to roll the
         # file handler over as well just so that each log file doesn't blow up in size, and so we can safely check
         # past days' logs (the file will appear blank until python is done writing to it)
+        os.chdir(ws.SOCKET_PATH)
         for handler in root_logger.handlers:
             if isinstance(handler, logging.FileHandler):
                 root_logger.removeHandler(handler)
-        root_logger.addHandler(logging.FileHandler(f"{n.strftime('%Y%m%d')}.log"))
+        root_logger.addHandler(logging.FileHandler(f"full/{n.strftime('%Y%m%d')}.log"))
         # closing and opening new files for each of the four message types for each of the currencies we sub to
         # returns a list of (key, value) tuples, for f_dict, tuples will be (currency_name, dictionary)
         for sym, dic in ws.f_dict.items():
@@ -68,7 +70,6 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
             for k, f in dic.items():
                 f.close()
             # making sure that we don't accidentally create a subdirectory full/full
-            os.chdir(SOCKET_PATH)
             if not os.path.exists("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d"))):
                 os.mkdir("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d")))
             # for each message type m, let the dictionary for each currency be the set {m : file_obj}
@@ -120,7 +121,9 @@ def main(**kwargs):
     # registering the handler to handle killing of child
     signal.signal(signal.SIGTERM, sig_handler)
 
-    logname = f"{dt.utcnow().strftime('%Y%m%d')}.log"
+    if not os.path.exists("full"):
+        os.mkdir("full")
+    logname = f"full/{dt.utcnow().strftime('%Y%m%d')}.log"
     logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"),
                         format="%(asctime)s|%(levelname)s|%(message)s",
                         filename=logname, filemode="a",
