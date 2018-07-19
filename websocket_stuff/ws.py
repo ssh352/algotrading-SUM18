@@ -7,7 +7,7 @@ import sys
 from datetime import date as d
 from datetime import datetime as dt
 from dateutil import parser as dparser
-from CBP_adaptions import CoinbaseProAdaptedWS, COINBASE_PRO_MAX_QUERY_FREQ
+from CBP_adaptions import CoinbaseProAdaptedWS, COINBASE_PRO_MAX_QUERY_FREQ, SOCKET_PATH
 from json import dumps, loads
 
 # defining the root_logger log instance as global so that we don't need to pass it around a bunch, bad style? maybe
@@ -67,6 +67,8 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
             # dic.items() returns a list of (key, value) tuples, for dic, the tuples will be (msg_type, file_obj)
             for k, f in dic.items():
                 f.close()
+            # making sure that we don't accidentally create a subdirectory full/full
+            os.chdir(SOCKET_PATH)
             if not os.path.exists("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d"))):
                 os.mkdir("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d")))
             # for each message type m, let the dictionary for each currency be the set {m : file_obj}
