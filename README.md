@@ -15,9 +15,8 @@ List of depedencies:
 
 1. webSocketApp
 https://pypi.org/project/websocket-client/
-Dependencies installation notes:
 websocket library: pip package name is "websocket-client"
-dateutil (parsing) library: pip package name is "python-dateutil"
 
 2. python-dateutil
 https://pypi.org/project/python-dateutil/
+dateutil (parsing) library: pip package name is "python-dateutil"
