@@ -24,3 +24,35 @@
 21:42:53|WARNING|'CoinbaseProAdaptedWS' object has no attribute 'create_dispatcher'
 21:42:55|INFO|KeyboardInterrupt Interrupt processed, exiting...
 21:42:55|INFO|Coinbase connection closed
+21:47:08|INFO|Socket initialized
+21:47:08|INFO|Entered run loop
+21:47:09|WARNING|'CoinbaseProAdaptedWS' object has no attribute 'create_dispatcher'
+21:47:13|WARNING|Attempting reconnect
+21:47:13|INFO|Coinbase connection closed
+21:47:13|INFO|Entered run loop
+21:47:13|WARNING|'CoinbaseProAdaptedWS' object has no attribute 'create_dispatcher'
+21:47:15|INFO|KeyboardInterrupt Interrupt processed, exiting...
+21:47:15|INFO|Coinbase connection closed
+21:47:17|INFO|Socket initialized
+21:47:17|INFO|Entered run loop
+21:47:17|WARNING|'CoinbaseProAdaptedWS' object has no attribute 'create_dispatcher'
+21:47:20|INFO|KeyboardInterrupt Interrupt processed, exiting...
+21:47:20|INFO|Coinbase connection closed
+21:47:59|INFO|Socket initialized
+21:47:59|INFO|Entered run loop
+21:47:59|WARNING|'CoinbaseProAdaptedWS' object has no attribute 'create_dispatcher'
+21:48:03|WARNING|Attempting reconnect
+21:48:03|INFO|Coinbase connection closed
+21:48:03|INFO|Entered run loop
+21:48:04|WARNING|'CoinbaseProAdaptedWS' object has no attribute 'create_dispatcher'
+21:48:07|INFO|KeyboardInterrupt Interrupt processed, exiting...
+21:48:07|INFO|Coinbase connection closed
+21:51:33|INFO|Socket initialized
+21:51:33|INFO|Entered run loop
+21:51:34|WARNING|'CoinbaseProAdaptedWS' object has no attribute 'create_dispatcher'
+21:51:38|WARNING|Attempting reconnect
+21:51:38|INFO|Coinbase connection closed
+21:51:38|INFO|Entered run loop
+21:51:38|WARNING|'CoinbaseProAdaptedWS' object has no attribute 'create_dispatcher'
+21:51:40|INFO|KeyboardInterrupt Interrupt processed, exiting...
+21:51:40|INFO|Coinbase connection closed
