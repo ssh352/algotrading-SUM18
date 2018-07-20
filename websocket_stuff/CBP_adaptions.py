@@ -69,7 +69,7 @@ class CoinbaseProAdaptedWS(WebSocketApp):
             for sym in self.symbols:
                 if not os.path.exists(sym):
                     os.mkdir(sym)
-            # for all symbols, open corresponding (:) file write stream to csv file
+            # for all symbols, open corresponding file write stream to csv file and store in f_dict
             self.f_dict = {sym: open("symbol/CBP_{symbol}_level2_{date}.csv".format(
                         symbol=sym, date=self.save_date.strftime("%Y%m%d")), "a") 
                         for sym in self.symbols}
@@ -78,7 +78,7 @@ class CoinbaseProAdaptedWS(WebSocketApp):
                 os.mkdir("full")
             os.chdir("full")
             self.full_msg_types = ["received", "open", "done", "match"]
-            # Setting up folder structure st each sym has a folder for each day containing each of the msg types
+            # Setting up folder structure st. each sym has a folder for each day containing each of the msg types
             for sym in self.symbols:
                 if not os.path.exists(sym):
                     os.mkdir(sym)
@@ -100,67 +100,58 @@ class CoinbaseProAdaptedWS(WebSocketApp):
                 print(",".join(self.match_fields), file=self.f_dict[sym]["match"])
 
     # handlers for each type of message that may be sent via the 'full' channel (excepting change, accept)
-
     def handle_received(self, json_obj):
-        """
-        handles messages from 'full' channel of type 'received'
-        json_obj: the JSON object received by the websocket, should be of type dict
-        """
+        # handles messages from 'full' channel of type 'received'
+        # json_obj: the JSON object received by the web socket, should be of type dict
+
         # attempting to access values by sequential key, if key doesn't exist, add empty value
+        # loop stitch together all values returned in json_obj, print to correct file as stored in f_dict
         print(",".join(["" if k not in json_obj else str(json_obj[k]) for k in self.rec_fields]),
               file=self.f_dict[json_obj["product_id"]][json_obj["type"]])
 
     def handle_open(self, json_obj):
-        """
-        handles messages from 'full' channel of type 'open'
-        json_obj: the JSON object received by the websocket, should be of type dict
-        """
+        # handles messages from 'full' channel of type 'open', see handle_received
         print(",".join([str(json_obj[k]) for k in self.open_fields]),
               file=self.f_dict[json_obj["product_id"]][json_obj["type"]])
 
     def handle_done(self, json_obj):
-        """
-        handles messages from 'full' channel of type 'done'
-        json_obj: the JSON object received by the websocket, should be of type dict
-        """
+        # handles messages from 'full' channel of type 'done', see handle_received
         print(",".join(["" if k not in json_obj else str(json_obj[k]) for k in self.done_fields]),
               file=self.f_dict[json_obj["product_id"]][json_obj["type"]])
 
     def handle_match(self, json_obj):
-        """
-        handles messages from 'full' channel of type 'match'
-        json_obj: the JSON object received by the websocket, should be of type dict
-        """
+        # handles messages from 'full' channel of type 'match', see handle_received
         print(",".join([str(json_obj[k]) for k in self.match_fields]),
               file=self.f_dict[json_obj["product_id"]][json_obj["type"]])
 
+    """
+    run event loop for WebSocket framework.
+    This loop is infinite loop and is alive during websocket is available.
+    sockopt: values for socket.setsockopt.
+        sockopt must be tuple
+        and each element is argument of sock.setsockopt.
+    sslopt: ssl socket optional dict.
+    ping_interval: automatically send "ping" command
+        every specified period(second)
+        if set to 0, not send automatically.
+    ping_timeout: timeout(second) if the pong message is not received.
+    http_proxy_host: http proxy host name.
+    http_proxy_port: http proxy port. If not set, set to 80.
+    http_no_proxy: host names, which doesn't use proxy.
+    skip_utf8_validation: skip utf8 validation.
+    host: update host header.
+    origin: update origin header.
+    """
     def run_forever(self, sockopt=None, sslopt=None,
                     ping_interval=0, ping_timeout=None,
                     http_proxy_host=None, http_proxy_port=None,
                     http_no_proxy=None, http_proxy_auth=None,
                     skip_utf8_validation=False,
                     host=None, origin=None, dispatcher=None):
-        """
-        run event loop for WebSocket framework.
-        This loop is infinite loop and is alive during websocket is available.
-        sockopt: values for socket.setsockopt.
-            sockopt must be tuple
-            and each element is argument of sock.setsockopt.
-        sslopt: ssl socket optional dict.
-        ping_interval: automatically send "ping" command
-            every specified period(second)
-            if set to 0, not send automatically.
-        ping_timeout: timeout(second) if the pong message is not received.
-        http_proxy_host: http proxy host name.
-        http_proxy_port: http proxy port. If not set, set to 80.
-        http_no_proxy: host names, which doesn't use proxy.
-        skip_utf8_validation: skip utf8 validation.
-        host: update host header.
-        origin: update origin header.
-        """
-
+        # if ping_timeout is not none OR <= zero, set to none
         if not ping_timeout or ping_timeout <= 0:
             ping_timeout = None
+        # to make sure the WS doesn't timeout before its ping interval
         if ping_timeout and ping_interval and ping_interval <= ping_timeout:
             raise WebSocketException("Ensure ping_interval > ping_timeout")
         if sockopt is None:
