@@ -13,33 +13,44 @@
 #include "Time_Event.hpp"
 
 namespace Gemini {
+
     enum EventType : int {
+
         Initial,
         Place,
         Cancel,
         Fill
     };
+
     enum ExecutionOptions : int {
+
         NIL,
         maker_or_cancel,
         immediate_or_cancel,
         auction_only, // believe this one won't show up in the CBOE data
         indication_of_interest // believe this one won't show up in the CBOE data
     };
+
     enum Side : bool {
+
         buy,
         sell
     };
+
     enum OrderType : int {
+
         limit,
         market
     };
 }
 
 namespace Backtester {
-    // this will be gemini specific for now TOTO move to a templated system to improve generality
+
+    // this will be gemini specific for now TODO move to a templated system to improve generality
     class Tick : public Time_Event {
+
     public:
+
         const Gemini::EventType event_t;
         const Gemini::ExecutionOptions ex_opts;
         const Gemini::Side side;

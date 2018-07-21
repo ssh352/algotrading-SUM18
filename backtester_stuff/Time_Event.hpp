@@ -16,14 +16,17 @@
 
 namespace mp = boost::multiprecision;
 namespace Backtester {
+
     typedef mp::cpp_dec_float_50 decimal;
     class Time_Event {
+
         // unix style epoch timestamp
         uint64_t timestamp;
         // may be vendor/exchange supplied identifier, or somehow determined by user
         uint64_t eventID;
         // 6 letter symbol of updated instrument, eg BTCUSD // TOTO better to use c_str() or enum?
         std::string symbol;
+
     };
 }
 
