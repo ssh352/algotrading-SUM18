@@ -7,3 +7,10 @@
 //
 
 #include "csv.hpp"
+#include <iterator>
+
+using namespace Backtester;
+Gem_CSV_File::Gem_CSV_File(std::ifstream& in_f) {
+    Gem_CSV_Row row;
+    in_f >> row;
+}
