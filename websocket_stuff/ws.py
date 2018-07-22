@@ -62,10 +62,10 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
     # Close current files and open new ones for a new day once midnight comes
     if message_type in ws.full_msg_types and dparser.parse(json_res["time"]).day != ws.save_date.day:
         logging.warning("Msg day differs from save day, attempting rollover")
-        n = dt.utcnow()  # the current datetime, "now"
+        now = dt.utcnow()  # the current datetime, "now"
 
         # store date for next roll-over
-        ws.save_date = d(n.year, n.month, n.day)
+        ws.save_date = d(now.year, now.month, now.day)
 
         # We have two log handlers, the one printing to stderr and the one printing to our file,
         # we want to roll the file handler over as well just so that each log file doesn't blow up
@@ -75,7 +75,7 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
         for handler in root_logger.handlers:
             if isinstance(handler, logging.FileHandler):
                 root_logger.removeHandler(handler)
-        root_logger.addHandler(logging.FileHandler(f"full/{n.strftime('%Y%m%d')}.log"))
+        root_logger.addHandler(logging.FileHandler(f"full/{now.strftime('%Y%m%d')}.log"))
 
         # closing and opening new files for each of the four message types for each of the
         # currencies we sub to returns a list of (key, value) tuples, for f_dict,
