@@ -1,5 +1,6 @@
 import time
 import logging
+import lzma
 import os
 import signal
 import sys
@@ -92,8 +93,8 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
                 os.mkdir("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d")))
 
             # for each message type m, let the dictionary for each currency be the set {m : file_obj}
-            ws.f_dict[sym] = {m: open("{symbol}/{date}/CBP_{symbol}_full_{m}_{date}.csv".format(
-                    m=m, symbol=sym, date=ws.save_date.strftime("%Y%m%d")), "a")
+            ws.f_dict[sym] = {m: lzma.open("{symbol}/{date}/CBP_{symbol}_full_{m}_{date}.xz".format(
+                    m=m, symbol=sym, date=ws.save_date.strftime("%Y%m%d")), "a", preset=7)
                     for m in ws.full_msg_types
                 }
 
@@ -109,8 +110,10 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
     elif message_type == "l2update":
         # logging.info("G5")
         for change in json_res["changes"]:
+            # TODO comment and remove prev
             # save each update in corresponding csv, formatting with trailing \n via print()
             print(",".join([str(i) for i in change]), file=ws.f_dict[json_res["product_id"]])
+            ws.f_dict[json_res["product_id"]].write((",".join([str(i) for i in change]) + "\n").encode("utf-8"))
 
     # for info about the handling of the following messages see declarations in CBP_adaptions.py
     elif message_type == "received":

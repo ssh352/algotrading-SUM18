@@ -1,5 +1,6 @@
 import time
 import logging
+import lzma
 
 from websocket import *
 from datetime import datetime as dt
@@ -86,18 +87,18 @@ class CoinbaseProAdaptedWS(WebSocketApp):
                     os.mkdir("{s}/{d}".format(s=sym, d=self.save_date.strftime("%Y%m%d")))
 
             self.f_dict = {
-                sym: {m: open("{symbol}/{date}/CBP_{symbol}_full_{m}_{date}.csv".format(
-                                 m=m, symbol=sym, date=self.save_date.strftime("%Y%m%d")), "w")
+                # lzma.open is like the regular open except we write compressed data, preset (0-9) is measure of
+                # compression, with 9 as maximum compression at expense of CPU & RAM load
+                sym: {m: lzma.open("{symbol}/{date}/CBP_{symbol}_full_{m}_{date}.xz".format(
+                                 m=m, symbol=sym, date=self.save_date.strftime("%Y%m%d")), "w", preset=7)
                       for m in self.full_msg_types
                 }
                 for sym in self.symbols
             }
             # Writing the header for each csv
             for sym in self.symbols:
-                print(",".join(self.rec_fields), file=self.f_dict[sym]["received"])
-                print(",".join(self.open_fields), file=self.f_dict[sym]["open"])
-                print(",".join(self.done_fields), file=self.f_dict[sym]["done"])
-                print(",".join(self.match_fields), file=self.f_dict[sym]["match"])
+                for msg_type in self.full_msg_types:
+                    self.f_dict[sym][msg_type].write((",".join(self.rec_fields) + "\n").encode("utf-8"))
 
     # handlers for each type of message that may be sent via the 'full' channel (excepting change, accept)
     def handle_received(self, json_obj):
@@ -106,23 +107,28 @@ class CoinbaseProAdaptedWS(WebSocketApp):
 
         # attempting to access values by sequential key, if key doesn't exist, add empty value
         # loop stitch together all values returned in json_obj, print to correct file as stored in f_dict
-        print(",".join(["" if k not in json_obj else str(json_obj[k]) for k in self.rec_fields]),
-              file=self.f_dict[json_obj["product_id"]][json_obj["type"]])
+        # the final encode call on the string converts str -> bytes which is what the LZMAFile expects
+        self.f_dict[json_obj["product_id"]][json_obj["type"]].write(
+            (",".join(["" if k not in json_obj else str(json_obj[k]) for k in self.rec_fields]) + "\n").encode("utf-8")
+        )
 
     def handle_open(self, json_obj):
         # handles messages from 'full' channel of type 'open', see handle_received
-        print(",".join([str(json_obj[k]) for k in self.open_fields]),
-              file=self.f_dict[json_obj["product_id"]][json_obj["type"]])
+        self.f_dict[json_obj["product_id"]][json_obj["type"]].write(
+            (",".join([str(json_obj[k]) for k in self.open_fields]) + "\n").encode("utf-8")
+        )
 
     def handle_done(self, json_obj):
         # handles messages from 'full' channel of type 'done', see handle_received
-        print(",".join(["" if k not in json_obj else str(json_obj[k]) for k in self.done_fields]),
-              file=self.f_dict[json_obj["product_id"]][json_obj["type"]])
+        self.f_dict[json_obj["product_id"]][json_obj["type"]].write(
+            (",".join(["" if k not in json_obj else str(json_obj[k]) for k in self.done_fields]) + "\n").encode("utf-8")
+        )
 
     def handle_match(self, json_obj):
         # handles messages from 'full' channel of type 'match', see handle_received
-        print(",".join([str(json_obj[k]) for k in self.match_fields]),
-              file=self.f_dict[json_obj["product_id"]][json_obj["type"]])
+        self.f_dict[json_obj["product_id"]][json_obj["type"]].write(
+            (",".join([str(json_obj[k]) for k in self.match_fields]) + "\n").encode("utf-8")
+        )
 
     """
     run event loop for WebSocket framework.
