@@ -24,4 +24,4 @@ Dependencies for Backtester include Boost for its high precision decimal class. 
 Importing modules for pyhcharm:
 https://stackoverflow.com/questions/26069254/importerror-no-module-named-bottle-pycharm
 
-Use system interpreter instead of virtual env
+Use system interpreter instead of virtual env, messes with the library dependencies
