@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <fstream>
 #include <queue>
+#include <vector>
 #endif /* CSV_File_hpp */
 
 namespace Backtester {
@@ -25,6 +26,8 @@ namespace Backtester {
         Gem_CSV_File(std::istream& in_f);
         
         Gem_CSV_Row getNextLine();
+        
+        std::vector<Gem_CSV_Row> getInitials();
     private:
         
         std::queue<Gem_CSV_Row> rows;

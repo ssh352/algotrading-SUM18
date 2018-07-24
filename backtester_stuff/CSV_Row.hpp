@@ -13,6 +13,7 @@
 #include <iostream>
 #include <vector>
 #include <queue>
+#include <unordered_map>
 
 // gonna throw stuff related to processing the CBOE CSV's in here for now
 
@@ -26,27 +27,27 @@ namespace Backtester {
         
         Gem_CSV_Row();
         
-        friend std::istream& operator>>(std::istream& is, Gem_CSV_Row &row) {
-            row.dat.resize(NUM_COLUMNS, "");
-            
+        friend std::istream& operator>>(std::istream& is, Gem_CSV_Row &row)
+        {
             // reads each field until the next comma
             for (int i = 0; i < NUM_COLUMNS-1; ++i) {
-                std::getline(is, row.dat[i], ',');
+                std::getline(is, row.dat[row.header[i]], ',');
             }
             
-            std::getline(is, row.dat.back());
+            std::getline(is, row.dat[row.header.back()]);
             
             return is;
         }
-        
+        const std::string& operator[](std::string key) const;
         void PrintRow();
         
     private:
-        
-       std::vector<std::string> dat;
+        // the valid keys for each row, they correspond to fields in the actual CSV file
+        const std::vector<std::string> header = { "EventID", "EventDate", "EventTime", "EventMillis", "OrderID", "Options", "EventType", "Symbol", "OrderType", "Side", "LimitPrice", "OriginalQ", "GrossNotional", "FillPrice", "FillQ", "TotalExecQ", "RemainingQ", "AvgPrice"
+        };
+        std::unordered_map<std::string, std::string> dat;
         
     };
 
-  
 }
 #endif /* CSV_Row_hpp */

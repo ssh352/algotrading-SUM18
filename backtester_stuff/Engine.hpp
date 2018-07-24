@@ -14,11 +14,13 @@
 #include <stdio.h>
 #include <vector>
 
-namespace Backtester {
+namespace Backtester
+{
     
 template<typename TIME_RES> // the time resolutions aren't finalized, but will be of : tick, 1-min bar, 5-min bar, etc.
 
-    class Engine {
+    class Engine
+    {
 
     private:
 

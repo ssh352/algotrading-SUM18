@@ -8,7 +8,7 @@
 
 #include "Order.hpp"
 
-using namespace backtester;
+using namespace Backtester;
     
 Order::Order()
 :orderType(0)

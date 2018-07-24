@@ -7,21 +7,16 @@
 //
 
 #include "CSV_File.hpp"
-#include <queue>
-#include <fstream>
-#include <stdio.h>
 #include <iostream>
 
 using namespace Backtester;
 
-Gem_CSV_File::Gem_CSV_File(){
-    
-}
+Gem_CSV_File::Gem_CSV_File() {}
 
-Gem_CSV_File::Gem_CSV_File(std::istream& in_f){
-    
+Gem_CSV_File::Gem_CSV_File(std::istream& in_f)
+{
     Gem_CSV_Row row;
-    while(in_f >> row)
+    while (in_f >> row)
     {
         rows.push(row);
         row.PrintRow();
@@ -33,6 +28,18 @@ Gem_CSV_Row Gem_CSV_File::getNextLine()
     Gem_CSV_Row temp = rows.front();
     rows.pop();
     return temp;
+}
+
+std::vector<Gem_CSV_Row> Gem_CSV_File::getInitials()
+{
+    std::vector<Gem_CSV_Row> initials;
+    
+    while (rows.front()["EventType"] == "Initial")
+    {
+        initials.push_back(getNextLine());
+    }
+    
+    return initials;
 }
 
 
