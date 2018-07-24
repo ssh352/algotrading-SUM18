@@ -1,9 +1,7 @@
-import shutil
+import boto3
+from boto3 import s3
 import os
-import multiprocessing as mp
 import datetime
-import signal
-import sys
 import time
 
 
@@ -11,43 +9,34 @@ import time
 
 # THIS ASSUMES THAT websocket_stuff/full EXISTS! MAKE SURE IT DOES OR STUFF WILL GO WEIRD!
 
-
-def init_worker():
-    signal.signal(signal.SIGTERM, sig_handler)
-
-
-def sig_handler(sig):
-    sys.exit(0)
-
-
-def roller(currency_dir):
-    """
-    periodically polls the directories inside a currency's directory and compresses them if safe to, ie if the directory
-    is from yesterday or farther back in the past and the socket is done writing to them. When roller compresses a
-    directory, it also removes the uncompressed directory
-    :param currency_dir: directory corresponding to a currency pair, eg ETH-EUR
-    :return:
-    """
-    os.chdir(currency_dir)
-    while True:
-        date_dirs = [obj for obj in os.listdir() if os.path.isdir(obj)]  # creates a list of directory names
-        now_day = datetime.datetime.utcnow().day
-        for folder in date_dirs:
-            if now_day - int(folder[-2:]) >= 1:  # if the folder is from yesterday or farther back
-                shutil.make_archive(folder, "xztar", folder)  # makes a compressed tarball as folder.tar.xz
-                shutil.rmtree(folder)  # remove the directory after we create a compressed archive of it
-        time.sleep(3600)  # wait an hour before polling again, compression isn't urgent
+# Basically ripped from
+# https://www.developerfiles.com/upload-files-to-s3-with-python-keeping-the-original-folder-structure/
+def transfer_folder_to_bucket(folder_name, bucket_name):
+    s3 = boto3.resource("s3")
+    bucket = s3.Bucket(bucket_name)
+    for root, dirs, files in os.walk(folder_name):  # I'm honestly not entirely sure how os.walk works, sorry guys
+        for file in files:
+            full_path = os.path.join(root, file)
+            with open(full_path, 'rb') as dat:
+                print(f"uploading {'full' + full_path[len(folder_name):]}")
+                bucket.put_object(Key="full" + full_path[len(folder_name):], Body=dat)
 
 
 def main():
-    signal.signal(signal.SIGTERM, sig_handler)
-
-    WEBSOCKET_STUFF_PATH = os.getcwd()
-    os.chdir('full')
+    os.chdir("full")
+    FULL_PATH = os.getcwd()
     pairs = [file for file in os.listdir()]
-    # TODO the signal handler setting is actually a race condition... how to fix?
-    with mp.Pool(processes=len(pairs), initializer=init_worker) as pool:
-        pool.map(func=roller, iterable=pairs, chunksize=1)
+    while True:
+        for pair in pairs:
+            os.chdir(os.path.join(FULL_PATH, pair))
+            date_dirs = [obj for obj in os.listdir() if os.path.isdir(obj)]
+            now_day = datetime.datetime.utcnow().day
+            for folder in date_dirs:
+                if now_day - int(folder[-2:]) >= 1:  # if the folder is from yesterday or farther back
+                    transfer_folder_to_bucket(folder, "cryptoorderbookdata")
+        time.sleep(3600)  # wait an hour before polling again
+
+
 
 if __name__ == "main":
     main()
