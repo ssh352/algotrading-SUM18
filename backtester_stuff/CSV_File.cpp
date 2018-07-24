@@ -28,4 +28,11 @@ Gem_CSV_File::Gem_CSV_File(std::istream& in_f){
     }
 }
 
+Gem_CSV_Row Gem_CSV_File::getNextLine()
+{
+    Gem_CSV_Row temp = rows.front();
+    rows.pop();
+    return temp;
+}
+
 

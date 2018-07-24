@@ -24,6 +24,7 @@ namespace Backtester {
         
         Gem_CSV_File(std::istream& in_f);
         
+        Gem_CSV_Row getNextLine();
     private:
         
         std::queue<Gem_CSV_Row> rows;
