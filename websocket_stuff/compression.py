@@ -1,5 +1,5 @@
 import boto3
-from boto3 import s3
+import shutil
 import os
 import datetime
 import time
@@ -25,18 +25,21 @@ def transfer_folder_to_bucket(folder_name, bucket_name):
 def main():
     os.chdir("full")
     FULL_PATH = os.getcwd()
-    pairs = [file for file in os.listdir()]
+    pairs = [file for file in os.listdir() if os.path.isdir(file)]
+    print(pairs)
     while True:
         for pair in pairs:
-            os.chdir(os.path.join(FULL_PATH, pair))
+            os.chdir(os.path.join(FULL_PATH, pair) )
             date_dirs = [obj for obj in os.listdir() if os.path.isdir(obj)]
             now_day = datetime.datetime.utcnow().day
             for folder in date_dirs:
-                if now_day - int(folder[-2:]) >= 1:  # if the folder is from yesterday or farther back
+                print(folder)
+                if now_day - int(folder[-2:]) >= 0:  # if the folder is from yesterday or farther back
                     transfer_folder_to_bucket(folder, "cryptoorderbookdata")
+                    shutil.rmtree(folder)
         time.sleep(3600)  # wait an hour before polling again
 
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     main()
