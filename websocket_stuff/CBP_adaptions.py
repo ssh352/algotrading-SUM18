@@ -21,7 +21,7 @@ COINBASE_PRO_MAX_QUERY_FREQ = 4
 # (coinbase does not seem to support ping-pong)
 class CoinbaseProAdaptedWS(WebSocketApp):
     def __init__(self, heartbeat_timeout=10, *args, **kwargs):
-        SOCKET_PATH = os.getcwd() # working directory of websocket, we'll use this to avoid nested dirs
+        self.SOCKET_PATH = os.getcwd() # working directory of websocket, we'll use this to avoid nested dirs
         # see for explanation of arg/kwarg vvv
         # https://pythontips.com/2013/08/04/args-and-kwargs-in-python-explained/
         # check ws for passed in, all are kwargs
