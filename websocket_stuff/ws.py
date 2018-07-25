@@ -12,11 +12,11 @@ from dateutil import parser as dparser
 from CBP_adaptions import CoinbaseProAdaptedWS, COINBASE_PRO_MAX_QUERY_FREQ
 from json import dumps, loads
 
-# defining the root_logger log instance as global so that we don't need to pass it around a bunch, bad style? maybe
+# Defining the root_logger log instance as global so that we don't need to pass it around (bad style?)
 global root_logger
 
 
-# detects signals from the process and logs accordingly
+# Detects signals from the process and logs accordingly
 def sig_handler(sig, frame):
     """
     :param signal: signal, ie SIGTERM, SIGABRT, etc. (note you can't actually catch SIGKILL)
@@ -27,9 +27,8 @@ def sig_handler(sig, frame):
     logging.warning(f"Possible loss of connection, exiting with signal {signal.Signals(sig).name}")
     sys.exit(1)
 
-# here we are going to specify the two (or more) channels that we
-# want to subscribe to, where subtype is "level 2" currently
-# and send that info to our websocket
+# Here we are going to specify the two (or more) channels that we
+# want to subscribe to, where subtype is "level 2" currently and send that info to our websocket
 def on_open(ws: CoinbaseProAdaptedWS):
     params = {
         "type": "subscribe",
@@ -51,6 +50,7 @@ def on_open(ws: CoinbaseProAdaptedWS):
     logging.info("Coinbase connection opened")
 
 
+# Transfers passed in folder name to S3
 def transfer_folder_to_bucket(folder_name, bucket_name):
     s3 = boto3.resource("s3")
     bucket = s3.Bucket(bucket_name)
@@ -62,6 +62,7 @@ def transfer_folder_to_bucket(folder_name, bucket_name):
                 bucket.put_object(Key="full" + full_path[len(folder_name):], Body=dat)
 
 
+# o
 def upload_files(ws: CoinbaseProAdaptedWS):
     os.chdir(ws.SOCKET_PATH)
     os.chdir("full")
