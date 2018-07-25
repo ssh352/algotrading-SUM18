@@ -60,7 +60,7 @@ class CoinbaseProAdaptedWS(WebSocketApp):
         utcnow = dt.utcnow()
         self.save_date = d(utcnow.year, utcnow.month, utcnow.day)
         self.heartbeat_timeout: int = heartbeat_timeout
-        self.midday = 0 # Tracks whether hour is between 0-12 and 13-24
+        self.midday = 0 if utcnow.hour < 13 else 1  # Tracks whether hour is between 0-12 and 13-24
 
         # initializing file dictionary based on level2 vs full
         # full is 2D because of the diff message types
