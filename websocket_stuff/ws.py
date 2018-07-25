@@ -75,6 +75,7 @@ def upload_files(ws: CoinbaseProAdaptedWS):
             transfer_folder_to_bucket(folder, "cryptoorderbookdata")
             shutil.rmtree(folder)
 
+
 def manage_directories(ws: CoinbaseProAdaptedWS):
     # We have two log handlers, the one printing to stderr and the one printing to our file,
     # we want to roll the file handler over as well just so that each log file doesn't blow up
@@ -105,6 +106,7 @@ def manage_directories(ws: CoinbaseProAdaptedWS):
             m=m, symbol=sym, date=ws.save_date.strftime("%Y%m%d"), midday=ws.midday), "a", preset=7)
             for m in ws.full_msg_types
         }
+
 
 def on_message(ws: CoinbaseProAdaptedWS, message: str):
 
