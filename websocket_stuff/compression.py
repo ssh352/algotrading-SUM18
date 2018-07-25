@@ -17,9 +17,9 @@ def transfer_folder_to_bucket(folder_name, bucket_name):
     for root, dirs, files in os.walk(folder_name):  # I'm honestly not entirely sure how os.walk works, sorry guys
         for file in files:
             full_path = os.path.join(root, file)
-            with open(full_path, 'rb') as dat:
+            with open(full_path, 'rb') as data:
                 print(f"uploading {'full' + full_path[len(folder_name):]}")
-                bucket.put_object(Key="full" + full_path[len(folder_name):], Body=dat)
+                bucket.put_object(Key="full" + full_path[len(folder_name):], Body=data)
 
 
 def main():

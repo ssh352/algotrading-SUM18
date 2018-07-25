@@ -4,7 +4,7 @@ import lzma
 import os
 import signal
 import sys
-
+import shutil
 from datetime import date as d
 from datetime import datetime as dt
 from dateutil import parser as dparser
@@ -25,17 +25,6 @@ def sig_handler(sig, frame):
     # this is an example of the new special formatted strings in python
     logging.warning(f"Possible loss of connection, exiting with signal {signal.Signals(sig).name}")
     sys.exit(1)
-
-
-def transfer_folder_to_bucket(folder_name, bucket_name):
-    s3 = boto3.resource("s3")
-    bucket = s3.Bucket(bucket_name)
-    for root, dirs, files in os.walk(folder_name):  # I'm honestly not entirely sure how os.walk works, sorry guys
-        for file in files:
-            full_path = os.path.join(root, file)
-            with open(full_path, 'rb') as dat:
-                print(f"uploading {'full' + full_path[len(folder_name):]}")
-                bucket.put_object(Key="full" + full_path[len(folder_name):], Body=dat)
 
 # here we are going to specify the two (or more) channels that we
 # want to subscribe to, where subtype is "level 2" currently
@@ -61,6 +50,62 @@ def on_open(ws: CoinbaseProAdaptedWS):
     logging.info("Coinbase connection opened")
 
 
+def transfer_folder_to_bucket(folder_name, bucket_name):
+    s3 = boto3.resource("s3")
+    bucket = s3.Bucket(bucket_name)
+    for root, dirs, files in os.walk(folder_name):  # I'm honestly not entirely sure how os.walk works, sorry guys
+        for file in files:
+            full_path = os.path.join(root, file)
+            with open(full_path, 'rb') as dat:
+                print(f"uploading {'full' + full_path[len(folder_name):]}")
+                bucket.put_object(Key="full" + full_path[len(folder_name):], Body=dat)
+
+
+def upload_files(ws: CoinbaseProAdaptedWS):
+    os.chdir(ws.SOCKET_PATH)
+    os.chdir("full")
+    FULL_PATH = os.getcwd()
+    pairs = [file for file in os.listdir() if os.path.isdir(file)]
+    print(pairs)
+    for pair in pairs:
+        os.chdir(os.path.join(FULL_PATH, pair))
+        date_dirs = [obj for obj in os.listdir() if os.path.isdir(obj)]
+        for folder in date_dirs:
+            print(folder)
+            transfer_folder_to_bucket(folder, "cryptoorderbookdata")
+            shutil.rmtree(folder)
+
+def manage_directories(ws: CoinbaseProAdaptedWS):
+    # We have two log handlers, the one printing to stderr and the one printing to our file,
+    # we want to roll the file handler over as well just so that each log file doesn't blow up
+    # in size, and so we can safely check past days' logs
+    # (the file will appear blank until python is done writing to it)
+    os.chdir(ws.SOCKET_PATH)
+    for handler in root_logger.handlers:
+        if isinstance(handler, logging.FileHandler):
+            root_logger.removeHandler(handler)
+    root_logger.addHandler(logging.FileHandler(f"full/{now.strftime('%Y%m%d')}.log"))
+
+    # closing and opening new files for each of the four message types for each of the
+    # currencies we sub to returns a list of (key, value) tuples, for f_dict,
+    # tuples will be (currency_name, dictionary)
+    for sym, dic in ws.f_dict.items():
+
+        # dic.items() returns a list of (key, value) tuples,
+        # for dic, the tuples will be (msg_type, file_obj)
+        for k, f in dic.items():
+            f.close()
+
+        # making sure that we don't accidentally create a subdirectory full/full
+        if not os.path.exists("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d"))):
+            os.mkdir("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d")))
+
+        # for each message type m, let the dictionary for each currency be the set {m : file_obj}
+        ws.f_dict[sym] = {m: lzma.open("{symbol}/{date}/CBP_{symbol}_full_{m}_{date}_{midday}.xz".format(
+            m=m, symbol=sym, date=ws.save_date.strftime("%Y%m%d"), midday=ws.midday), "a", preset=7)
+            for m in ws.full_msg_types
+        }
+
 def on_message(ws: CoinbaseProAdaptedWS, message: str):
 
     # JSON style object represented as a Python dictionary (hashmap)
@@ -72,46 +117,18 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
     # if we receive a valid message type and the date differs from the most recent date
     # Close current files and open new ones for a new day once midnight comes
     now = dt.utcnow()  # the current datetime, "now"
-    if message_type in ws.full_msg_types and ws.midday == 0 and now.hour() > 12:
+    if message_type in ws.full_msg_types and ws.midday == 0 and now.hour > 12:
+        logging.warning("Msg time past midday, attempting rollover")
         ws.midday = 1
-
+        upload_files(ws)
+        manage_directories(ws)
     elif message_type in ws.full_msg_types and dparser.parse(json_res["time"]).day != ws.save_date.day:
         logging.warning("Msg day differs from save day, attempting rollover")
         ws.midday = 0
-
+        upload_files(ws)
         # store date for next roll-over
         ws.save_date = d(now.year, now.month, now.day)
-
-        # We have two log handlers, the one printing to stderr and the one printing to our file,
-        # we want to roll the file handler over as well just so that each log file doesn't blow up
-        # in size, and so we can safely check past days' logs
-        # (the file will appear blank until python is done writing to it)
-        os.chdir(ws.SOCKET_PATH)
-        for handler in root_logger.handlers:
-            if isinstance(handler, logging.FileHandler):
-                root_logger.removeHandler(handler)
-        root_logger.addHandler(logging.FileHandler(f"full/{now.strftime('%Y%m%d')}.log"))
-
-        # closing and opening new files for each of the four message types for each of the
-        # currencies we sub to returns a list of (key, value) tuples, for f_dict,
-        # tuples will be (currency_name, dictionary)
-        for sym, dic in ws.f_dict.items():
-
-            # dic.items() returns a list of (key, value) tuples,
-            # for dic, the tuples will be (msg_type, file_obj)
-            for k, f in dic.items():
-                f.close()
-
-            # making sure that we don't accidentally create a subdirectory full/full
-            if not os.path.exists("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d"))):
-                os.mkdir("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d")))
-
-            # for each message type m, let the dictionary for each currency be the set {m : file_obj}
-            ws.f_dict[sym] = {m: lzma.open("{symbol}/{date}/CBP_{symbol}_full_{m}_{date}_{midday}.xz".format(
-                    m=m, symbol=sym, date=ws.save_date.strftime("%Y%m%d"), midday=ws.midday), "a", preset=7)
-                    for m in ws.full_msg_types
-                }
-
+        manage_directories(ws)
     # if message type was a heartbeat we want to store the time for referencing later
     if message_type == "heartbeat":
         logging.info("heartbeat")
