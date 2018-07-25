@@ -27,6 +27,16 @@ def sig_handler(sig, frame):
     sys.exit(1)
 
 
+def transfer_folder_to_bucket(folder_name, bucket_name):
+    s3 = boto3.resource("s3")
+    bucket = s3.Bucket(bucket_name)
+    for root, dirs, files in os.walk(folder_name):  # I'm honestly not entirely sure how os.walk works, sorry guys
+        for file in files:
+            full_path = os.path.join(root, file)
+            with open(full_path, 'rb') as dat:
+                print(f"uploading {'full' + full_path[len(folder_name):]}")
+                bucket.put_object(Key="full" + full_path[len(folder_name):], Body=dat)
+
 # here we are going to specify the two (or more) channels that we
 # want to subscribe to, where subtype is "level 2" currently
 # and send that info to our websocket
@@ -61,9 +71,13 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
 
     # if we receive a valid message type and the date differs from the most recent date
     # Close current files and open new ones for a new day once midnight comes
-    if message_type in ws.full_msg_types and dparser.parse(json_res["time"]).day != ws.save_date.day:
+    now = dt.utcnow()  # the current datetime, "now"
+    if message_type in ws.full_msg_types and ws.midday == 0 and now.hour() > 12:
+        ws.midday = 1
+
+    elif message_type in ws.full_msg_types and dparser.parse(json_res["time"]).day != ws.save_date.day:
         logging.warning("Msg day differs from save day, attempting rollover")
-        now = dt.utcnow()  # the current datetime, "now"
+        ws.midday = 0
 
         # store date for next roll-over
         ws.save_date = d(now.year, now.month, now.day)
@@ -93,8 +107,8 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
                 os.mkdir("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d")))
 
             # for each message type m, let the dictionary for each currency be the set {m : file_obj}
-            ws.f_dict[sym] = {m: lzma.open("{symbol}/{date}/CBP_{symbol}_full_{m}_{date}.xz".format(
-                    m=m, symbol=sym, date=ws.save_date.strftime("%Y%m%d")), "a", preset=7)
+            ws.f_dict[sym] = {m: lzma.open("{symbol}/{date}/CBP_{symbol}_full_{m}_{date}_{midday}.xz".format(
+                    m=m, symbol=sym, date=ws.save_date.strftime("%Y%m%d"), midday=ws.midday), "a", preset=7)
                     for m in ws.full_msg_types
                 }
 

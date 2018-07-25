@@ -60,6 +60,7 @@ class CoinbaseProAdaptedWS(WebSocketApp):
         utcnow = dt.utcnow()
         self.save_date = d(utcnow.year, utcnow.month, utcnow.day)
         self.heartbeat_timeout: int = heartbeat_timeout
+        self.midday = 0 # Tracks whether hour is between 0-12 and 13-24
 
         # initializing file dictionary based on level2 vs full
         # full is 2D because of the diff message types
@@ -89,8 +90,8 @@ class CoinbaseProAdaptedWS(WebSocketApp):
             self.f_dict = {
                 # lzma.open is like the regular open except we write compressed data, preset (0-9) is measure of
                 # compression, with 9 as maximum compression at expense of CPU & RAM load
-                sym: {m: lzma.open("{symbol}/{date}/CBP_{symbol}_full_{m}_{date}.xz".format(
-                                 m=m, symbol=sym, date=self.save_date.strftime("%Y%m%d")), "w", preset=7)
+                sym: {m: lzma.open("{symbol}/{date}/CBP_{symbol}_full_{m}_{date}_{midday}.xz".format(
+                                 m=m, symbol=sym, date=self.save_date.strftime("%Y%m%d"), midday=self.midday), "w", preset=7)
                       for m in self.full_msg_types
                 }
                 for sym in self.symbols
