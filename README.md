@@ -18,6 +18,10 @@ websocket library: pip package name is `websocket-client`
 https://pypi.org/project/python-dateutil/
 dateutil (parsing) library: pip package name is `python-dateutil`
 
+3. Boto3
+https://boto3.readthedocs.io/en/latest/
+AWS interfacing API: pip package name is 'boto3'
+
 Backtester stuff will be in `backtester_stuff` and will be entirely C++ at least for the time being (CLI is fine).
 Dependencies for Backtester include Boost for its high precision decimal class. It's also just a great library overall, so install it.
 
