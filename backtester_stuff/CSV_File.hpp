@@ -13,7 +13,6 @@
 #include <fstream>
 #include <queue>
 #include <vector>
-#endif /* CSV_File_hpp */
 
 namespace Backtester {
     
@@ -34,3 +33,4 @@ namespace Backtester {
         
     };
 }
+#endif /* CSV_File_hpp */

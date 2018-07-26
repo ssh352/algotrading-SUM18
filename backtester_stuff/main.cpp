@@ -7,19 +7,21 @@
 //
 
 #include <iostream>
+#include <fstream>
 #include <map>
+#include "CSV_File.hpp"
+#include "Level2OrderBook.hpp"
 #include <boost/multiprecision/cpp_dec_float.hpp>
+
+#include <functional>
+
+using namespace Backtester;
 
 int main(int argc, const char * argv[]) {
     typedef boost::multiprecision::cpp_dec_float_50 decimal;
-    std::map<decimal, std::string> myMap;
-    myMap[decimal("1.233")] = "boo";
-    myMap[decimal("1.234")] = "foo";
-    myMap[decimal("1.232")] = "poo";
-    for (auto& p : myMap)
-    {
-        std::cout << p.second << std::endl;
-    }
-    std::cout << "Hello, World!\n";
+    auto cmp = std::greater<decimal>();
+    decimal d("1.5");
+    decimal d2("2");
+    std::cout << cmp(d2, d) << std::endl;
     return 0;
 }
