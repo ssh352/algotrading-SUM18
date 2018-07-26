@@ -138,7 +138,7 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
         # store date for next roll-over
         ws.save_date = d(now.year, now.month, now.day)
         manage_directories(ws)
-    upload_files(ws)
+
     # if message type was a heartbeat we want to store the time for referencing later
     if message_type == "heartbeat":
         logging.info("heartbeat")
