@@ -82,6 +82,7 @@ def upload_files(ws: CoinbaseProAdaptedWS):
             bucket.put_object(Key=pair, Body=data)
             os.remove(pair)
 
+
 # Creates directories to store data, manages root_logger, opens file reading streams
 def manage_directories(ws: CoinbaseProAdaptedWS):
     # We have two log handlers, the one printing to stderr and the one printing to our file,
