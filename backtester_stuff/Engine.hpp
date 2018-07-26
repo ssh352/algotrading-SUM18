@@ -28,8 +28,8 @@ template<typename TIME_RES> // the time resolutions aren't finalized, but will b
         double max_drawdown;
         decimal running_return_mean;     // Online algorithm will update mean and var as per the following link:
         decimal running_return_variance; // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
-        const decimal RISK_FREE_RATE = 2; // 3-Month T-Bill ~2% used as proxy for rf rate
-
+        const decimal RISK_FREE_RATE = 2; // 3-Month T-Bill ~2% used as proxy for rf rate 
+        
     public:
 
         void run_backtest();

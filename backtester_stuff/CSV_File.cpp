@@ -16,10 +16,12 @@ Gem_CSV_File::Gem_CSV_File() {}
 Gem_CSV_File::Gem_CSV_File(std::istream& in_f)
 {
     Gem_CSV_Row row;
+    std::string tmp;
+    getline(in_f, tmp); // getting rid of header
     while (in_f >> row)
     {
         rows.push(row);
-        row.PrintRow();
+//        row.PrintRow();
     }
 }
 
