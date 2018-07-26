@@ -50,34 +50,39 @@ def on_open(ws: CoinbaseProAdaptedWS):
     logging.info("Coinbase connection opened")
 
 
-# Transfers passed in folder name to S3
-def transfer_folder_to_bucket(folder_name, bucket_name):
-    s3 = boto3.resource("s3")
-    bucket = s3.Bucket(bucket_name)
+# Transfers passed in folder name to S3 with its file path as key
+def transfer_folder_to_bucket(folder_name, bucket):
     for root, dirs, files in os.walk(folder_name):  # I'm honestly not entirely sure how os.walk works, sorry guys
         for file in files:
             full_path = os.path.join(root, file)
-            with open(full_path, 'rb') as dat:
+            with open(full_path, 'rb') as data:
                 print(f"uploading {'full' + full_path[len(folder_name):]}")
-                bucket.put_object(Key="full" + full_path[len(folder_name):], Body=dat)
+                bucket.put_object(Key="full" + full_path[len(folder_name):], Body=data)
 
 
-# o
+# High level manager in charge of calling upload function and removing folders
 def upload_files(ws: CoinbaseProAdaptedWS):
     os.chdir(ws.SOCKET_PATH)
     os.chdir("full")
     FULL_PATH = os.getcwd()
-    pairs = [file for file in os.listdir() if os.path.isdir(file)]
-    print(pairs)
+    pairs = [file for file in os.listdir()] # List of
+
+    s3 = boto3.resource("s3")  # Create s3 resource to interface with S3
+    bucket = s3.Bucket("cryptoorderbookdata")  # Create bucket object to store files in
     for pair in pairs:
-        os.chdir(os.path.join(FULL_PATH, pair))
-        date_dirs = [obj for obj in os.listdir() if os.path.isdir(obj)]
-        for folder in date_dirs:
-            print(folder)
-            transfer_folder_to_bucket(folder, "cryptoorderbookdata")
-            shutil.rmtree(folder)
+        if os.path.isdir(pair):
+            os.chdir(os.path.join(FULL_PATH, pair))
+            date_dirs = [obj for obj in os.listdir() if os.path.isdir(obj)]
+            for folder in date_dirs:
+                print(folder)
+                transfer_folder_to_bucket(folder, bucket)
+                shutil.rmtree(folder)
+        elif pair.endswith(".log"):
+            data = open(pair, 'rb')
+            bucket.put_object(Key=pair, Body=data)
+            os.remove(pair)
 
-
+# Creates directories to store data, manages root_logger, opens file reading streams
 def manage_directories(ws: CoinbaseProAdaptedWS):
     # We have two log handlers, the one printing to stderr and the one printing to our file,
     # we want to roll the file handler over as well just so that each log file doesn't blow up
@@ -114,18 +119,17 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
 
     # JSON style object represented as a Python dictionary (hashmap)
     json_res = loads(message)
-
     # the type of message we are sent, reference Coinbase docs for list of possible values
     message_type = json_res["type"]
 
-    # if we receive a valid message type and the date differs from the most recent date
-    # Close current files and open new ones for a new day once midnight comes
     now = dt.utcnow()  # the current datetime, "now"
+    # If time > 12 hrs, upload the files and create new directories
     if message_type in ws.full_msg_types and ws.midday == 0 and now.hour > 12:
         logging.warning("Msg time past midday, attempting rollover")
         ws.midday = 1
         upload_files(ws)
         manage_directories(ws)
+    # If time > 24 hrs aka next day, upload files and create new directories
     elif message_type in ws.full_msg_types and dparser.parse(json_res["time"]).day != ws.save_date.day:
         logging.warning("Msg day differs from save day, attempting rollover")
         ws.midday = 0
@@ -133,7 +137,7 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
         # store date for next roll-over
         ws.save_date = d(now.year, now.month, now.day)
         manage_directories(ws)
-
+    upload_files(ws)
     # if message type was a heartbeat we want to store the time for referencing later
     if message_type == "heartbeat":
         logging.info("heartbeat")
