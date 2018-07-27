@@ -91,7 +91,7 @@ class CoinbaseProAdaptedWS(WebSocketApp):
                 # lzma.open is like the regular open except we write compressed data, preset (0-9) is measure of
                 # compression, with 9 as maximum compression at expense of CPU & RAM load
                 sym: {m: lzma.open("{symbol}/{date}/CBP_{symbol}_full_{m}_{date}_{midday}.xz".format(
-                                 m=m, symbol=sym, date=self.save_date.strftime("%Y%m%d"), midday=self.midday), "a", preset=7)
+                                 m=m, symbol=sym, date=self.save_date.strftime("%Y%m%d"), midday=self.midday), "x", preset=7)
                       for m in self.full_msg_types
                 }
                 for sym in self.symbols
