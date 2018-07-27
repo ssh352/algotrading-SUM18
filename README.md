@@ -53,3 +53,24 @@ Other Notes:
     1.Importing modules for pyhcharm:
         https://stackoverflow.com/questions/26069254/importerror-no-module-named-bottle-pycharm
     2.Use system interpreter instead of virtual env, messes with the library dependencies
+
+    Traceback (most recent call last):
+  File "driver.py", line 40, in <module>
+    main()
+  File "driver.py", line 23, in main
+    p, beat = SocketLoopFactory()
+  File "driver.py", line 18, in SocketLoopFactory
+    return mp.Process(target=ws.main(), kwargs={"shared_beat": v}), v
+  File "/home/ec2-user/algotrading-SUM18/websocket_stuff/ws.py", line 227, in main
+    **kwargs)
+  File "/home/ec2-user/algotrading-SUM18/websocket_stuff/CBP_adaptions.py", line 97, in __init__
+    for sym in self.symbols
+  File "/home/ec2-user/algotrading-SUM18/websocket_stuff/CBP_adaptions.py", line 97, in <dictcomp>
+    for sym in self.symbols
+  File "/home/ec2-user/algotrading-SUM18/websocket_stuff/CBP_adaptions.py", line 95, in <dictcomp>
+    for m in self.full_msg_types
+  File "/usr/lib64/python3.7/lzma.py", line 302, in open
+    preset=preset, filters=filters)
+  File "/usr/lib64/python3.7/lzma.py", line 120, in __init__
+    self._fp = builtins.open(filename, mode)
+FileNotFoundError: [Errno 2] No such file or directory: 'BTC-USD/20180727/CBP_BTC-USD_full_received_20180727_0.xz'
