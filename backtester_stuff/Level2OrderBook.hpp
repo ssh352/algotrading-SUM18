@@ -25,11 +25,20 @@ namespace Backtester
     public:
         
         Level2OrderBook() = default;
-        Level2OrderBook(Gem_CSV_File csv);
-        Level2OrderBook(std::istream& in_f);
+        Level2OrderBook(Gem_CSV_File csv); // initializes book from a CBOE Gemini data file
+        Level2OrderBook(std::istream& in_f); // initializes book by creating csv object and delegating to ctor above ^
         
-        void addToPriceLevel(decimal price, decimal quantity);
-        void removeFromPriceLevel(decimal price, decimal quantity);
+        void addToPriceLevel(decimal price, decimal quantity); // adds quantity to price level @ price
+        void removeFromPriceLevel(decimal price, decimal quantity); // removes quantity from price level @ price
+        // processes next line in gemini csv file, whatever that may mean. This may include cancelling a previously made
+        // order, placing a new one, or filling a market order
+        void processCSVLine(Gem_CSV_Row line);
+        
+        // returns the n closest asks/bids from the midprice
+        std::pair<std::vector<std::pair<decimal, decimal>>,
+                  std::vector<std::pair<decimal, decimal>>> nClosestLevels(size_t n);
+        std::vector<std::pair<decimal, decimal>> nClosestAsks(size_t n); // returns n closest asks from the midprice
+        std::vector<std::pair<decimal, decimal>> nClosestBids(size_t n); // returns n closest bids from the midprice
         
         decimal midPrice;
     

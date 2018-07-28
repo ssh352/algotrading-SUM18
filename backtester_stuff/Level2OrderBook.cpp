@@ -83,26 +83,27 @@ void Level2OrderBook::addToPriceLevel(decimal price, decimal quantity)
     if (quantity == 0)
         return;
     
+    std::vector<std::pair<decimal, decimal>>::iterator it;
     if (price > midPrice) // look in asks
-    {
-        auto it = asks.begin();
-        while (price < it->first)
+        it = asks.begin();
+    else
+        it = bids.begin(); // look in bids
+    
+    
+    if (it == asks.begin())
+        while (price < it->first) // moving up through the asks
             ++it;
-        if (it->first == price)
-            it->second += quantity;
-        else
-            asks.insert(it, { price, quantity });
-    }
-    else // look in bids
-    {
-        auto it = bids.begin();
-        while (price > it->first)
+    else
+        while (price > it->first) // moving down through the bids
             ++it;
-        if (it->first == price)
-            it->second += quantity;
-        else
-            bids.insert(it, { price, quantity });
-    }
+    
+    
+    if (it->first == price) // the price level exists in the book, so add to its quantity
+        it->second += quantity;
+    else
+        // if price > midPrice we're adding to asks, else we're adding to bids
+        (price > midPrice ? asks : bids).insert(it, { price, quantity }); // level doesn't exist yet, so we create it
+    
     updateMid();
 }
 
@@ -111,50 +112,77 @@ void Level2OrderBook::removeFromPriceLevel(decimal price, decimal quantity)
     if (quantity == 0)
         return;
     
+    std::vector<std::pair<decimal, decimal>>::iterator it;
     if (price > midPrice) // look in asks
-    {
-        auto it = asks.begin();
-        while (price < it->first)
+        it = asks.begin();
+    else
+        it = bids.begin(); // look in bids
+    
+    
+    if (it == asks.begin())
+        while (price < it->first) // moving up through the asks
             ++it;
-        if (it->first == price)
-        {
-            if (it->second > quantity)
-                it->second -= quantity;
-            else
-            {
-                throw std::invalid_argument("Attempted to remove " + std::string(quantity) + " from level "
-                                            + std::string(price) + " which only has " + std::string(it->second));
-            }
-        }
+    else
+        while (price > it->first) // moving down through the bids
+            ++it;
+    
+    
+    if (it->first == price)
+    {
+        if (it->second > quantity)
+            it->second -= quantity;
         else
         {
             throw std::invalid_argument("Attempted to remove " + std::string(quantity) + " from level "
-                                        + std::string(price) + " but level doesn't exist");
+                                        + std::string(price) + " which only has " + std::string(it->second));
         }
     }
-    else // look in bids
+    else
     {
-        auto it = bids.begin();
-        while (price > it->first)
-            ++it;
-        if (it->first == price)
-        {
-            if (it->second > quantity)
-                it->second -= quantity;
-            else
-            {
-                throw std::invalid_argument("Attempted to remove " + std::string(quantity) + " from level "
-                                            + std::string(price) + " which only has " + std::string(it->second));
-            }
-        }
-        else
-        {
-            throw std::invalid_argument("Attempted to remove " + std::string(quantity) + " from level "
-                                        + std::string(price) + " but level doesn't exist");
-        }
+        throw std::invalid_argument("Attempted to remove " + std::string(quantity) + " from level "
+                                    + std::string(price) + " but level doesn't exist");
     }
     updateMid();
 }
+
+void Level2OrderBook::processCSVLine(Gem_CSV_Row line)
+{
+    std::string type = line["EventType"];
+    if (type == "Place")
+    {
+        addToPriceLevel(decimal(line["LimtPrice"]), decimal(line["OriginalQ"]));
+    }
+    else if (type == "Cancel")
+    {
+        removeFromPriceLevel(decimal(line["LimitPrice"]), decimal(line["OriginalQ"]));
+    }
+    else if (type == "Fill")
+    {
+        
+    }
+    else
+    {
+        throw std::runtime_error("Expected EventType to be of [Place, Cancel, Fill] but got " + type);
+    }
+}
+
+std::pair<std::vector<std::pair<decimal, decimal>>,
+std::vector<std::pair<decimal, decimal>>> Level2OrderBook::nClosestLevels(size_t n)
+{
+    return { std::vector<std::pair<decimal, decimal>>(bids.begin(), bids.begin() + n),
+             std::vector<std::pair<decimal, decimal>>(asks.begin(), asks.begin() + n)
+    };
+}
+
+std::vector<std::pair<decimal, decimal>> Level2OrderBook::nClosestAsks(size_t n)
+{
+    return std::vector<std::pair<decimal, decimal>>(asks.begin(), asks.begin() + n);
+}
+std::vector<std::pair<decimal, decimal>> Level2OrderBook::nClosestBids(size_t n)
+{
+    return std::vector<std::pair<decimal, decimal>>(bids.begin(), bids.begin() + n);
+}
+
 /////////////
 // PRIVATE //
 /////////////
