@@ -211,9 +211,9 @@ class CoinbaseProAdaptedWS(WebSocketApp):
             def read():
                 if not self.keep_running:
                     return teardown()
-                logging.info("brecv")
+                print("brecv")
                 op_code, frame = self.sock.recv_data_frame(True)
-                logging.info("arecv")
+                print("arecv")
                 if op_code == ABNF.OPCODE_CLOSE:
                     close_frame = frame
                     return teardown()
