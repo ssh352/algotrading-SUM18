@@ -65,6 +65,8 @@ namespace Backtester
         std::vector<std::pair<decimal, decimal>> asks;
         std::vector<std::pair<decimal, decimal>> bids;
         Gem_CSV_File &file;
+        std::vector<std::pair<decimal, decimal>>::iterator bestBid;
+        std::vector<std::pair<decimal, decimal>>::iterator bestAsk;
     };
     
 }

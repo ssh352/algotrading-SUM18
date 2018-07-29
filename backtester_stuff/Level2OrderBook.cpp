@@ -47,6 +47,8 @@ Level2OrderBook::Level2OrderBook(Gem_CSV_File& csv)
                 temp->insert(it, { level, quantity });
         }
     }
+    bestBid = bids.begin();
+    bestAsk = asks.begin();
     updateMid();
 #ifdef DEBUG
     for (int i = 0; i < 10; ++i)
@@ -79,13 +81,28 @@ void Level2OrderBook::addToPriceLevel(decimal price, decimal quantity)
     if(price > midPrice)
     {
         it = asks.begin();
-        while(it->first < price)
+        while(it != asks.end() && it->first < price)
             ++it;
+        if(std::distance(it, bestAsk) < 0)
+        {
+            bestAsk = it;
+        }
     }
     else{
         it = bids.begin();
-        while(it->first > price)
+        while(it != bids.end() && it->first > price)
             ++it;
+        if(std::distance(it, bestBid) < 0)
+        {
+            bestBid = it;
+        }
+    }
+    
+    
+    if(it == bids.end() || it == asks.end())
+    {
+        throw std::invalid_argument("Attempted to add " + std::string(quantity) + " to level "
+                                    + std::string(price) + "which doesn't exist ");
     }
     
     if (it->first == price) // the price level exists in the book, so add to its quantity
@@ -93,6 +110,8 @@ void Level2OrderBook::addToPriceLevel(decimal price, decimal quantity)
     else
         // if price > midPrice we're adding to asks, else we're adding to bids
         (price > midPrice ? asks : bids).insert(it, { price, quantity }); // level doesn't exist yet, so we create it
+    
+    
     
     updateMid();
 }
@@ -107,19 +126,33 @@ void Level2OrderBook::removeFromPriceLevel(decimal price, decimal quantity)
     if(price > midPrice)
     {
         it = asks.begin();
-        while(it->first < price)
+        while(it != asks.end() && it->first < price)
             ++it;
     }
     else{
         it = bids.begin();
-        while(it->first > price)
+        while(it != bids.end() && it->first > price)
             ++it;
+    }
+    
+    if(it == bids.end() || it == asks.end())
+    {
+        throw std::invalid_argument("Attempted to remove " + std::string(quantity) + " from level "
+                                    + std::string(price) + "which doesn't exist ");
     }
     
     if (it->first == price)
     {
         if (it->second > quantity)
+        {
             it->second -= quantity;
+        
+       
+        while(bestBid != bids.end() && bestBid->second == 0)
+            ++bestBid;
+        while(bestAsk != asks.end() && bestAsk->second == 0)
+            ++bestAsk;
+        }
         else
         {
             throw std::invalid_argument("Attempted to remove " + std::string(quantity) + " from level "
@@ -145,19 +178,26 @@ void Level2OrderBook::fillOrder(decimal price, decimal quantity, bool buy)
     if(buy)
     {
         it = bids.begin();
-        while(it->first > price)
+        while(it != bids.end() && it->first > price)
             ++it;
     }
     else{
         it = asks.begin();
-        while(it->first < price)
+        while(it != asks.end() && it->first < price)
             ++it;
     }
     
     if (it->first == price)
     {
         if (it->second > quantity)
+        {
             it->second -= quantity;
+            
+            while(bestBid != bids.end() && bestBid->second == 0)
+                ++bestBid;
+            while(bestAsk != asks.end() && bestAsk->second == 0)
+                ++bestAsk;
+        }
         else
         {
             throw std::invalid_argument("Attempted to remove " + std::string(quantity) + " from level "
@@ -220,5 +260,5 @@ std::vector<std::pair<decimal, decimal>> Level2OrderBook::nClosestBids(size_t n)
 // seems like it needs to take into account if we have 0 quantity in a price
 void Level2OrderBook::updateMid()
 {
-    midPrice = (asks.front().first + bids.front().first) / 2;
+    midPrice = (bestBid->first + bestAsk->first) / 2;
 }
