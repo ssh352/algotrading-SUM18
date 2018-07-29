@@ -26,16 +26,15 @@ namespace Backtester {
         
         Gem_CSV_File(const Gem_CSV_File & other);
         
-        Gem_CSV_Row getNextLine() const;
+        Gem_CSV_Row removeNextLine();
         
-        std::vector<Gem_CSV_Row> getInitials() const;
+        std::vector<Gem_CSV_Row> removeInitials();
         
         size_t getNumRows() const;
         
     private:
         
-        mutable unsigned int index;
-        std::vector<Gem_CSV_Row> rows;
+        std::queue<Gem_CSV_Row> rows;
         
     };
 }

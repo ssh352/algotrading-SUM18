@@ -12,40 +12,40 @@
 using namespace Backtester;
 
 Gem_CSV_File::Gem_CSV_File()
-:index(0)
 {}
 
 Gem_CSV_File::Gem_CSV_File(std::istream& in_f)
-:index(0)
 {
     Gem_CSV_Row row;
     std::string tmp;
     getline(in_f, tmp); // getting rid of header
     while (in_f >> row)
     {
-        rows.push_back(row);
+        rows.push(row);
 //        row.PrintRow();
     }
 }
 
 Gem_CSV_File::Gem_CSV_File(const Gem_CSV_File & other)
-:index(0),rows(other.rows)
+:rows(other.rows)
 {
 }
 
 
-Gem_CSV_Row Gem_CSV_File::getNextLine() const
+Gem_CSV_Row Gem_CSV_File::removeNextLine()
 {
-    return rows[index++];
+    Gem_CSV_Row temp = rows.front();
+    rows.pop();
+    return temp;
 }
 
-std::vector<Gem_CSV_Row> Gem_CSV_File::getInitials() const
+std::vector<Gem_CSV_Row> Gem_CSV_File::removeInitials()
 {
     std::vector<Gem_CSV_Row> initials;
     
     while (rows.front()["EventType"] == "Initial")
     {
-        initials.push_back(getNextLine());
+        initials.push_back(removeNextLine());
     }
     
     return initials;

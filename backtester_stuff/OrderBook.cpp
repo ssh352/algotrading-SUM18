@@ -11,9 +11,9 @@
 
 using namespace Backtester;
 
-OrderBook::OrderBook(const Gem_CSV_File &csvFile)
+OrderBook::OrderBook(Gem_CSV_File &csvFile)
 {
-    std::vector<Gem_CSV_Row> initials = csvFile.getInitials();
+    std::vector<Gem_CSV_Row> initials = csvFile.removeInitials();
     // need to load up a hash map with orderID as key, order metadata (how to represent?) as value
     // two vectors to represent the asks and bids
 }
