@@ -78,28 +78,29 @@ void Level2OrderBook::addToPriceLevel(decimal price, decimal quantity)
         return;
     
     std::vector<std::pair<decimal, decimal>>::iterator it;
-    if(price > midPrice)
+    if (price > midPrice)
     {
         it = asks.begin();
-        while(it != asks.end() && it->first < price)
+        while (it != asks.end() && it->first < price)
             ++it;
-        if(std::distance(it, bestAsk) < 0)
+        if (std::distance(it, bestAsk) < 0)
         {
             bestAsk = it;
         }
     }
-    else{
+    else
+    {
         it = bids.begin();
-        while(it != bids.end() && it->first > price)
+        while (it != bids.end() && it->first > price)
             ++it;
-        if(std::distance(it, bestBid) < 0)
+        if (std::distance(it, bestBid) < 0)
         {
             bestBid = it;
         }
     }
     
     
-    if(it == bids.end() || it == asks.end())
+    if (it == bids.end() || it == asks.end())
     {
         throw std::invalid_argument("Attempted to add " + std::string(quantity) + " to level "
                                     + std::string(price) + "which doesn't exist ");
@@ -144,14 +145,14 @@ void Level2OrderBook::removeFromPriceLevel(decimal price, decimal quantity)
     
     if (it->first == price)
     {
-        if (it->second > quantity)
+        if (it->second >= quantity)
         {
             it->second -= quantity;
         
        
-        while(bestBid != bids.end() && bestBid->second == 0)
+        while (bestBid != bids.end() && bestBid->second == 0)
             ++bestBid;
-        while(bestAsk != asks.end() && bestAsk->second == 0)
+        while (bestAsk != asks.end() && bestAsk->second == 0)
             ++bestAsk;
         }
         else
