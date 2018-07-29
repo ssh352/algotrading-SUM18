@@ -104,13 +104,14 @@ void Level2OrderBook::removeFromPriceLevel(decimal price, decimal quantity)
     
     std::vector<std::pair<decimal, decimal>>::iterator it;
     
-    if(price > midPrice)
+    if (price > midPrice)
     {
         it = asks.begin();
         while(it->first < price)
             ++it;
     }
-    else{
+    else
+    {
         it = bids.begin();
         while(it->first > price)
             ++it;
@@ -142,13 +143,14 @@ void Level2OrderBook::fillOrder(decimal price, decimal quantity, bool buy)
     std::vector<std::pair<decimal, decimal>>::iterator it;
     
     // seems like these should work
-    if(buy)
+    if (buy)
     {
         it = bids.begin();
         while(it->first > price)
             ++it;
     }
-    else{
+    else
+    {
         it = asks.begin();
         while(it->first < price)
             ++it;
@@ -186,7 +188,7 @@ void Level2OrderBook::processCSVLine(const Gem_CSV_Row& line)
     }
     else if (type == "Fill")
     {
-        if(line["OrderType"] == "Limit")
+        if (line["OrderType"] == "Limit")
         {
             fillOrder(decimal(line["LimitPrice"]), decimal(line["OriginalQ"]), (line["Side"] == "buy"));
         }
