@@ -32,6 +32,8 @@ namespace Backtester {
         
         size_t getNumRows() const;
         
+        bool empty() const;
+        
     private:
         
         std::queue<Gem_CSV_Row> rows;

@@ -51,9 +51,14 @@ std::vector<Gem_CSV_Row> Gem_CSV_File::removeInitials()
     return initials;
 }
 
-size_t  Gem_CSV_File::getNumRows() const
+size_t Gem_CSV_File::getNumRows() const
 {
     return rows.size();
+}
+
+bool Gem_CSV_File::empty() const
+{
+    return !getNumRows();
 }
 
 
