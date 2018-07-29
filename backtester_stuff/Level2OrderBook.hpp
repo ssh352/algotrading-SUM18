@@ -64,6 +64,7 @@ namespace Backtester
         // first will be price level, second will be quantity at level
         std::vector<std::pair<decimal, decimal>> asks;
         std::vector<std::pair<decimal, decimal>> bids;
+        const Gem_CSV_File &file;
     };
     
 }

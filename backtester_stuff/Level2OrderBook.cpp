@@ -18,9 +18,10 @@ using namespace Backtester;
 ////////////
 
 Level2OrderBook::Level2OrderBook(const Gem_CSV_File& csv)
+:file(csv)
 {
     // initialization step puts stuff on the book that was there from the previous day
-    std::vector<Gem_CSV_Row> initials = csv.getInitials();
+    std::vector<Gem_CSV_Row> initials = file.getInitials();
     bids.reserve(initials.size()); // could even possibly reserve csv size for each
     asks.reserve(initials.size()); // it would avoid ANY resizing
     
@@ -113,17 +114,6 @@ void Level2OrderBook::removeFromPriceLevel(decimal price, decimal quantity)
         while(it->first > price)
             ++it;
     }
-    
-    
-    
-    if (price > midPrice) // look in asks
-        it = std::lower_bound(asks.begin(), asks.end(), price,
-                              [](std::pair<decimal, decimal> p, decimal price){ return p.first > price; }
-                              );
-    else
-        it = std::lower_bound(bids.begin(), bids.end(), price,
-                               [](std::pair<decimal, decimal> p, decimal price){ return p.first < price; }
-                               );
     
     if (it->first == price)
     {
