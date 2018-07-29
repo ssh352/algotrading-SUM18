@@ -13,7 +13,7 @@
 
 #endif /* Order_hpp */
 
-namespace Backtester
+namespace backtester
 {
 
 enum OrderTypes : int {

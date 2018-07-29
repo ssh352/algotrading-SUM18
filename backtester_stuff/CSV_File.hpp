@@ -24,12 +24,18 @@ namespace Backtester {
         
         Gem_CSV_File(std::istream& in_f);
         
-        Gem_CSV_Row getNextLine();
+        Gem_CSV_File(const Gem_CSV_File & other);
         
-        std::vector<Gem_CSV_Row> getInitials();
+        Gem_CSV_Row getNextLine() const;
+        
+        std::vector<Gem_CSV_Row> getInitials() const;
+        
+        size_t getNumRows() const;
+        
     private:
         
-        std::queue<Gem_CSV_Row> rows;
+        mutable unsigned int index;
+        std::vector<Gem_CSV_Row> rows;
         
     };
 }

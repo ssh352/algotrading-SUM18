@@ -24,22 +24,37 @@ namespace Backtester
     {
     public:
         
+        // Default constructor
         Level2OrderBook() = default;
-        Level2OrderBook(Gem_CSV_File csv); // initializes book from a CBOE Gemini data file
-        Level2OrderBook(std::istream& in_f); // initializes book by creating csv object and delegating to ctor above ^
         
-        void addToPriceLevel(decimal price, decimal quantity); // adds quantity to price level @ price
-        void removeFromPriceLevel(decimal price, decimal quantity); // removes quantity from price level @ price
+        // initializes book from a CBOE Gemini data file
+        Level2OrderBook(const Gem_CSV_File& csv);
+        
+         // initializes book by creating csv object and delegating to ctor above ^
+        Level2OrderBook(std::istream& in_f);
+        
+        // adds quantity to price level @ price
+        void addToPriceLevel(decimal price, decimal quantity);
+        
+        // removes quantity from price level @ price
+        void removeFromPriceLevel(decimal price, decimal quantity);
+        
+        // fills an order by removing quantity from bit bids and asks @ price
+        void fillOrder(decimal price, decimal quantity);
+        
         // processes next line in gemini csv file, whatever that may mean. This may include cancelling a previously made
         // order, placing a new one, or filling a market order
-        void processCSVLine(Gem_CSV_Row line);
+        void processCSVLine(const Gem_CSV_Row& line);
         
         // returns the n closest asks/bids from the midprice
         std::pair<std::vector<std::pair<decimal, decimal>>,
                   std::vector<std::pair<decimal, decimal>>> nClosestLevels(size_t n);
-        std::vector<std::pair<decimal, decimal>> nClosestAsks(size_t n); // returns n closest asks from the midprice
-        std::vector<std::pair<decimal, decimal>> nClosestBids(size_t n); // returns n closest bids from the midprice
         
+        // returns n closest asks from the midprice
+        std::vector<std::pair<decimal, decimal>> nClosestAsks(size_t n);
+        
+        // returns n closest bids from the midprice
+        std::vector<std::pair<decimal, decimal>> nClosestBids(size_t n);
         decimal midPrice;
     
     private:

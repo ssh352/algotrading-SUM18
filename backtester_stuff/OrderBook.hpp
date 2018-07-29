@@ -22,10 +22,10 @@ namespace Backtester
     {
     public:
         OrderBook() = default;
-        OrderBook(Gem_CSV_File csvFile);
+        OrderBook(const Gem_CSV_File &csvFile);
     private:
-        std::vector<std::queue<Order>> asks;
-        std::vector<std::queue<Order>> bids;
+        //std::vector<std::queue<Order>> asks;
+       // std::vector<std::queue<Order>> bids;
     public:
     };
 }
