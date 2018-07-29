@@ -64,6 +64,9 @@ Level2OrderBook::Level2OrderBook(const Gem_CSV_File& csv)
 Level2OrderBook::Level2OrderBook(std::istream& in_f)
     : Level2OrderBook(Gem_CSV_File(in_f)) {}
 
+
+
+
 // both addToPriceLevel and removeFromPriceLevel do a linear search for the level, because most updates are near the mid
 void Level2OrderBook::addToPriceLevel(decimal price, decimal quantity)
 {
@@ -71,15 +74,17 @@ void Level2OrderBook::addToPriceLevel(decimal price, decimal quantity)
         return;
     
     std::vector<std::pair<decimal, decimal>>::iterator it;
-    if (price > midPrice) // look in asks
-        it = std::lower_bound(asks.begin(), asks.end(), price,
-                              [](std::pair<decimal, decimal> p, decimal price){ return p.first > price; }
-                              );
-    else
-        it = std::lower_bound(bids.begin(), bids.end(), price,
-                              [](std::pair<decimal, decimal> p, decimal price){ return p.first < price; }
-                              );
-    
+    if(price > midPrice)
+    {
+        it = asks.begin();
+        while(it->first < price)
+            ++it;
+    }
+    else{
+        it = bids.begin();
+        while(it->first > price)
+            ++it;
+    }
     
     if (it->first == price) // the price level exists in the book, so add to its quantity
         it->second += quantity;
@@ -96,6 +101,21 @@ void Level2OrderBook::removeFromPriceLevel(decimal price, decimal quantity)
         return;
     
     std::vector<std::pair<decimal, decimal>>::iterator it;
+    
+    if(price > midPrice)
+    {
+        it = asks.begin();
+        while(it->first < price)
+            ++it;
+    }
+    else{
+        it = bids.begin();
+        while(it->first > price)
+            ++it;
+    }
+    
+    
+    
     if (price > midPrice) // look in asks
         it = std::lower_bound(asks.begin(), asks.end(), price,
                               [](std::pair<decimal, decimal> p, decimal price){ return p.first > price; }
@@ -123,21 +143,25 @@ void Level2OrderBook::removeFromPriceLevel(decimal price, decimal quantity)
     updateMid();
 }
 
-void Level2OrderBook::fillOrder(decimal price, decimal quantity)
+void Level2OrderBook::fillOrder(decimal price, decimal quantity, bool buy)
 {
     if (quantity == 0)
         return;
     
-    std::vector<std::pair<decimal, decimal>>::iterator it = asks.begin();
-    std::vector<std::pair<decimal, decimal>>::iterator it2 = bids.begin();
+    std::vector<std::pair<decimal, decimal>>::iterator it;
     
     // seems like these should work
-    it = std::lower_bound(asks.begin(), asks.end(), price,
-                               [](std::pair<decimal, decimal> p, decimal price){ return p.first > price; }
-                               );
-    it2 = std::lower_bound(bids.begin(), bids.end(), price,
-                          [](std::pair<decimal, decimal> p, decimal price){ return p.first < price; }
-                          );
+    if(buy)
+    {
+        it = bids.begin();
+        while(it->first > price)
+            ++it;
+    }
+    else{
+        it = asks.begin();
+        while(it->first < price)
+            ++it;
+    }
     
     if (it->first == price)
     {
@@ -154,23 +178,6 @@ void Level2OrderBook::fillOrder(decimal price, decimal quantity)
         throw std::invalid_argument("Attempted to remove " + std::string(quantity) + " from level "
                                     + std::string(price) + " but level doesn't exist");
     }
-    
-    if (it2->first == price)
-    {
-        if (it->second > quantity)
-            it->second -= quantity;
-        else
-        {
-            throw std::invalid_argument("Attempted to remove " + std::string(quantity) + " from level "
-                                        + std::string(price) + " which only has " + std::string(it->second));
-        }
-    }
-    else
-    {
-        throw std::invalid_argument("Attempted to remove " + std::string(quantity) + " from level "
-                                    + std::string(price) + " but level doesn't exist");
-    }
-    
     
     updateMid();
 }
@@ -189,7 +196,9 @@ void Level2OrderBook::processCSVLine(const Gem_CSV_Row& line)
     else if (type == "Fill")
     {
         if(line["OrderType"] == "Limit")
-            fillOrder(decimal(line["LimitPrice"]), decimal(line["OriginalQ"]));
+        {
+            fillOrder(decimal(line["LimitPrice"]), decimal(line["OriginalQ"]), (line["Side"] == "buy"));
+        }
     }
     else
     {

@@ -40,7 +40,7 @@ namespace Backtester
         void removeFromPriceLevel(decimal price, decimal quantity);
         
         // fills an order by removing quantity from bit bids and asks @ price
-        void fillOrder(decimal price, decimal quantity);
+        void fillOrder(decimal price, decimal quantity, bool buy);
         
         // processes next line in gemini csv file, whatever that may mean. This may include cancelling a previously made
         // order, placing a new one, or filling a market order
