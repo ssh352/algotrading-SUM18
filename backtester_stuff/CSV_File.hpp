@@ -27,6 +27,7 @@ namespace Backtester {
         Gem_CSV_File(const Gem_CSV_File & other);
         
         Gem_CSV_Row removeNextLine();
+        const Gem_CSV_Row& peekNextLine() const;
         
         std::vector<Gem_CSV_Row> removeInitials();
         

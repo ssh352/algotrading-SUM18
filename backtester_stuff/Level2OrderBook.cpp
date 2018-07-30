@@ -64,6 +64,12 @@ Level2OrderBook::Level2OrderBook(Gem_CSV_File& csv)
 #endif
 }
 
+Level2OrderBook::Level2OrderBook(const Level2OrderBook& other)
+: asks(other.asks.begin(), other.asks.end()), bids(other.bids.begin(), other.bids.end()), bestBid(other.bestBid),
+bestAsk(other.bestAsk), file(other.file)
+{
+    
+}
 /*
 Level2OrderBook::Level2OrderBook(std::istream& in_f)
 {

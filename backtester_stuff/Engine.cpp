@@ -14,6 +14,15 @@ namespace Backtester {
     // PUBLIC //
     ////////////
     
+    Engine::Engine()
+    : LATENCY(200), lockoutLength(60) // arbitrarily set default latency=200ms, lockout=1mn
+    {}
+    
+    Engine::Engine(unsigned _LATENCY, unsigned _lockoutLength)
+    : LATENCY(_LATENCY), lockoutLength(_lockoutLength)
+    {
+    }
+    
     void Engine::runBacktest()
     {
         onStep();
@@ -52,11 +61,11 @@ namespace Backtester {
     
     void Engine::updateRunningReturnMean()
     {
-        
+        // TODO implement per the wikipedia article
     }
     
     void Engine::updateRunningReturnVar()
     {
-        
+        // TODO implement per the wikipedia article
     }
 }

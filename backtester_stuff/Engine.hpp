@@ -37,21 +37,8 @@ namespace Backtester
         // 3-Month T-Bill ~2% used as proxy for rf rate
         const decimal RISK_FREE_RATE = 2;
         
-        // TODO set in ctor, the (constant for now) latency in milliseconds we assume to be between sending and
-        // receiving an order
+        // the (constant for now) latency in milliseconds we assume to be between sending and receiving an order
         const unsigned LATENCY;
-        
-        // see wiki page above
-        void updateRunningReturnMean();
-        // see above
-        void updateRunningReturnVar();
-        
-    public:
-
-        // (eventually) the big papi method, will run the whole shebang
-        void runBacktest();
-
-    protected:
         
         // this is just an idea.. But to prevent overestimation of profits, might be a good idea to not allow the algo
         // to do too many trades in a short time. This is because in reality we'd have at most a few trades before we
@@ -61,6 +48,20 @@ namespace Backtester
         
         // how long we wish to be in trade lockout in seconds
         unsigned lockoutLength;
+        
+        // see wiki page above
+        void updateRunningReturnMean();
+        // see above
+        void updateRunningReturnVar();
+        
+    public:
+
+        Engine();
+        Engine(unsigned _LATENCY, unsigned _lockoutLength);
+        // (eventually) the big papi method, will run the whole shebang
+        void runBacktest();
+
+    protected:
         
         // if we are in lockout, when the lockout started
         boost::posix_time::ptime lockoutStartTime;

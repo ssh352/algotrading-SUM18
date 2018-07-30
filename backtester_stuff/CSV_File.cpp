@@ -39,6 +39,11 @@ Gem_CSV_Row Gem_CSV_File::removeNextLine()
     return temp;
 }
 
+const Gem_CSV_Row& Gem_CSV_File::peekNextLine() const
+{
+    return rows.front();
+}
+
 std::vector<Gem_CSV_Row> Gem_CSV_File::removeInitials()
 {
     std::vector<Gem_CSV_Row> initials;

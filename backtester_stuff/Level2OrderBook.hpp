@@ -30,6 +30,9 @@ namespace Backtester
         // initializes book from a CBOE Gemini data file
         Level2OrderBook(Gem_CSV_File& csv);
         
+        // initializes book from other book
+        Level2OrderBook(const Level2OrderBook& other);
+        
 //        // initializes book by creating csv object and delegating to ctor above ^
 //        Level2OrderBook(std::istream& in_f);
         

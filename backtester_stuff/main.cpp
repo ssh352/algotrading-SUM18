@@ -13,20 +13,23 @@
 #include "Level2OrderBook.hpp"
 #include <boost/multiprecision/cpp_dec_float.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-
+#include <boost/filesystem.hpp>
 #include <functional>
+#include <vector>
+#include <algorithm>
 
 using namespace Backtester;
 using namespace boost::posix_time;
+namespace fs = boost::filesystem;
 using std::string;
 
 int main(int argc, const char * argv[]) {
     typedef boost::multiprecision::cpp_dec_float_50 decimal;
-    string s1 = "2018-06-11 00:00:47.524";
-    string s2 = "2018-06-11 00:00:47.782";
-    ptime t1 = time_from_string(s1);
-    ptime t2 = time_from_string(s2);
-    time_duration td = t2 - t1;
-    std::cout << td.total_milliseconds() << std::endl;
+    string path = "/Users/pejato/Documents/Money/Data/Gemini/item_000007803";
+    std::vector<string> fileList;
+    for (auto& p : fs::directory_iterator(path))
+        fileList.push_back(p.path().native());
+    
+    std::sort(fileList.begin(), fileList.end());
     return 0;
 }
