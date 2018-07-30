@@ -11,7 +11,7 @@
 
 #include "Level2OrderBook.hpp"
 
-using namespace Backtester;
+namespace Backtester {
 
 ////////////
 // PUBLIC //
@@ -258,4 +258,6 @@ std::vector<std::pair<decimal, decimal>> Level2OrderBook::nClosestBids(size_t n)
 void Level2OrderBook::updateMid()
 {
     midPrice = (bestBid->first + bestAsk->first) / 2;
+}
+    
 }

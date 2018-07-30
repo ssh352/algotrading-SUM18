@@ -15,14 +15,14 @@
 #include <stdio.h>
 #include <vector>
 #include <queue>
+#include <utility>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace Backtester
 {
     
-template<typename DAT_TYPE> // the time resolutions aren't finalized, but will be of : tick, 1-min bar, 5-min bar, etc.
     class Engine
     {
-
     private:
         
         // Will store the PNL for each tick in time
@@ -59,13 +59,27 @@ template<typename DAT_TYPE> // the time resolutions aren't finalized, but will b
         // crazy fucking math). This bool will tell the derived class that we implement whether we're allowed to trade.
         bool inLockoutPeriod;
         
-        // will hold orders that have been sent but not yet received (due to latency) by the "exchange"
-        // TODO either the Order class needs to implement a time sent field or we need to store it in the queue somehow,
-        //      possible with std::pair (?), then in what format should time be? seconds since epoch?
-        std::queue<Order> sentOrders;
+        // how long we wish to be in trade lockout in seconds
+        unsigned lockoutLength;
         
+        // if we are in lockout, when the lockout started
+        boost::posix_time::ptime lockoutStartTime;
+        
+        // the datetime that the backtester is at. Crucial that this is set currently so that latency handling is done
+        boost::posix_time::ptime currentTime;
+        
+        // will hold orders that have been sent but not yet received (due to latency) by the "exchange"
+        std::queue<std::pair<Order, boost::posix_time::ptime>> sentOrders;
+        
+        // resolves an orders that have arrived after the next timestep has arrived and before any further algo logic
+        void resolveOrders();
+        
+        // what to do at the next "step" after the current timestamp/event has been processed, this includes setting the
+        // currentTime variable and anything else specific to the BACKTESTER such as latency handling. Algorithm logic
+        // goes in algoLogic
+        virtual void onStep() = 0;
         // user implemented method that requires data handling logic to be implemented
-        virtual void onData(DAT_TYPE dat) = 0;
+        virtual void algoLogic() = 0;
         
         // user implemented method that determines what happens an order reaches the "exchange" (after some latency)
         virtual void onOrderArrival(Order& order) = 0;

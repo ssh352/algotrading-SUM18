@@ -1,5 +1,5 @@
 Backtester stuff will be in `backtester_stuff` and will be entirely C++ at least for the time being (CLI is fine).
-Dependencies for Backtester include Boost for its high precision decimal class. It's also just a great library overall, so install it.
+Dependencies for Backtester include Boost for its high precision decimal class and its datetime tools. It's also just a great library overall, so install it.
 
 Websocket stuff is in the aptly named corresponding folder.
 
