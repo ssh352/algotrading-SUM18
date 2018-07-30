@@ -18,7 +18,7 @@ using namespace Backtester;
 ////////////
 
 Level2OrderBook::Level2OrderBook(Gem_CSV_File& csv)
-:file(csv)
+: file(csv)
 {
     // initialization step puts stuff on the book that was there from the previous day
     std::vector<Gem_CSV_Row> initials = file.removeInitials();
@@ -111,10 +111,6 @@ void Level2OrderBook::addToPriceLevel(decimal price, decimal quantity)
     else
         // if price > midPrice we're adding to asks, else we're adding to bids
         (price > midPrice ? asks : bids).insert(it, { price, quantity }); // level doesn't exist yet, so we create it
-    
-    
-    
-    updateMid();
 }
 
 void Level2OrderBook::removeFromPriceLevel(decimal price, decimal quantity)
@@ -166,7 +162,6 @@ void Level2OrderBook::removeFromPriceLevel(decimal price, decimal quantity)
         throw std::invalid_argument("Attempted to remove " + std::string(quantity) + " from level "
                                     + std::string(price) + " but level doesn't exist");
     }
-    updateMid();
 }
 
 void Level2OrderBook::fillOrder(decimal price, decimal quantity, bool buy)
@@ -212,8 +207,6 @@ void Level2OrderBook::fillOrder(decimal price, decimal quantity, bool buy)
         throw std::invalid_argument("Attempted to remove " + std::string(quantity) + " from level "
                                     + std::string(price) + " but level doesn't exist");
     }
-    
-    updateMid();
 }
 
 void Level2OrderBook::processCSVLine(const Gem_CSV_Row& line)
@@ -238,6 +231,7 @@ void Level2OrderBook::processCSVLine(const Gem_CSV_Row& line)
     {
         throw std::runtime_error("Expected EventType to be of [Place, Cancel, Fill] but got " + type);
     }
+    updateMid();
 }
 
 std::pair<std::vector<std::pair<decimal, decimal>>,
