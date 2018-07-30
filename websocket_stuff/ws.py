@@ -50,40 +50,6 @@ def on_open(ws: CoinbaseProAdaptedWS):
     logging.info("Coinbase connection opened")
 
 
-# Transfers passed in folder name to S3 with its file path as key
-def transfer_folder_to_bucket(folder_name, bucket):
-    for root, dirs, files in os.walk(folder_name):  # I'm honestly not entirely sure how os.walk works, sorry guys
-        for file in files:
-            full_path = os.path.join(root, file)
-            with open(full_path, 'rb') as data:
-                print(f"uploading {'full' + full_path[len(folder_name):]}")
-                bucket.put_object(Key="full" + full_path[len(folder_name):], Body=data)
-
-
-# High level manager in charge of calling upload function and removing folders
-def upload_files():
-
-    file_list = [file for file in os.listdir()]  # List of files in the 'full' folder
-    print(file_list)
-    s3 = boto3.resource("s3")  # Create s3 resource to interface with S3
-    bucket = s3.Bucket("cryptoorderbookdata")  # Create bucket object to store files in
-    for file in file_list:
-        if os.path.isdir(file):  # If file is a date directory
-            os.chdir(file)
-            date_dirs = [obj for obj in os.listdir() if os.path.isdir(obj)]
-            now_day = dt.utcnow().day
-            for folder in date_dirs:
-                if now_day - int(folder[-2:]) >= 1:
-                    print(folder)
-                    transfer_folder_to_bucket(folder, bucket)
-                    shutil.rmtree(folder)
-            os.chdir("..")
-        elif file.endswith(".log"):
-            data = open(file, 'rb')
-            bucket.put_object(Key=file, Body=data)
-            os.remove(file)
-
-
 def on_message(ws: CoinbaseProAdaptedWS, message: str):
 
     # JSON style object represented as a Python dictionary (hashmap)
@@ -94,7 +60,6 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
     # If past utc midnight, attempt to upload files and create a new date folder
     if message_type in ws.full_msg_types and dparser.parse(json_res["time"]).day != ws.save_date.day:
         logging.warning("Msg day differs from save day, attempting rollover")
-        upload_files()
         now = dt.utcnow()  # the current datetime, "now"
         # store date for next roll-over
         ws.save_date = d(now.year, now.month, now.day)
