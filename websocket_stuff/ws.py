@@ -100,6 +100,9 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
             ws.last_heartbeat = time.time()
         else:
             ws.last_heartbeat.value = time.time()
+        for sym in ws.symbols:
+            for msg_type in ws.full_msg_types:
+                ws.f_dict[sym][msg_type].flush()
 
     # if the update is from the level 2 channel we want to store the data in the correct csv
     elif message_type == "l2update":
@@ -137,6 +140,7 @@ def on_error(ws: CoinbaseProAdaptedWS, error: BaseException):
         logging.warning("Attempting reconnect")
     else:
         logging.warning("Interrupt caught")
+
 
 # log whenever the connection is terminated
 def on_close(ws: CoinbaseProAdaptedWS):
