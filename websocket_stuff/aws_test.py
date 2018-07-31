@@ -1,10 +1,11 @@
 import boto3
+import lzma
+import csv
+import shutil
 
 def main():
     print("Uploading...")
-    s3 = boto3.resource('s3')
-    data = open('README.md', 'rb')
-    s3.Bucket('cryptoorderbookdata').put_object(Key='README.md', Body=data)
+    shutil.make_archive("test compression", 'gztar', "full")
     print("Upload done!")
 
 if __name__ == "__main__":

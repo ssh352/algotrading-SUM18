@@ -14,10 +14,13 @@ import time
 def transfer_folder_to_bucket(folder_name, bucket):
     for root, dirs, files in os.walk(folder_name):  # I'm honestly not entirely sure how os.walk works, sorry guys
         for file in files:
-            full_path = os.path.join(root, file)
-            with open(full_path, 'rb') as data:
-                print(f"uploading {'full' + full_path[len(folder_name):]}")
-                bucket.put_object(Key="full" + full_path[len(folder_name):], Body=data)
+            if not file.endswith(".DS_STORE"):
+                full_path = os.path.join(root, file)
+                with open(full_path, 'rb') as data:
+                    print(f"uploading {'full/' + folder_name + full_path[len(folder_name):]}")
+                    bucket.put_object(Key="full/" + folder_name + full_path[len(folder_name):], Body=data)
+                    print("removing")
+                    os.remove(full_path)
 
 
 def main():
@@ -33,11 +36,15 @@ def main():
                 date_dirs = [obj for obj in os.listdir() if os.path.isdir(obj)]
                 now_day = datetime.datetime.utcnow().day
                 for folder in date_dirs:
-                    if now_day - int(folder[-2:]) >= 1:
+                    if now_day - int(folder[-2:]) >= 0:
                         print(folder)
-                        transfer_folder_to_bucket(folder, bucket)
+                        print("compressing" + folder)
+                        shutil.make_archive(folder, "gztar", folder)
+                        print("removing" + folder)
                         shutil.rmtree(folder)
                 os.chdir("..")
+                print("uploading" + file)
+                transfer_folder_to_bucket(file, bucket)
             elif file.endswith(".log"):
                 data = open(file, 'rb')
                 bucket.put_object(Key=file, Body=data)
