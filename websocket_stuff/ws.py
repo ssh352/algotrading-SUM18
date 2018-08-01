@@ -104,7 +104,6 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
     elif message_type == "l2update":
         # logging.info("G5")
         for change in json_res["changes"]:
-            # TODO comment and remove prev
             # save each update in corresponding csv, formatting with trailing \n via print()
             print(",".join([str(i) for i in change]), file=ws.f_dict[json_res["product_id"]])
             ws.f_dict[json_res["product_id"]].write((",".join([str(i) for i in change]) + "\n"))
