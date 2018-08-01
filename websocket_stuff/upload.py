@@ -47,9 +47,12 @@ def main():
                         shutil.make_archive(folder, "gztar", folder)
                         print("removing" + folder)
                         shutil.rmtree(folder)
+                        print("uploading" + folder)
+                        with open(folder + ".tar.gz", "rb") as data:
+                            bucket.put_object(Key="full/" + file + folder, Body=data)
+                        os.remove(folder + ".tar.gz")
+                        print("removing" + folder)
                 os.chdir("..")
-                print("uploading" + file)
-                transfer_folder_to_bucket(file, bucket)
             elif file.endswith(".log"):
                 data = open(file, 'rb')
                 bucket.put_object(Key=file, Body=data)
