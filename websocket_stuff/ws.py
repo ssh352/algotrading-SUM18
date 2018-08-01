@@ -72,23 +72,19 @@ def on_message(ws: CoinbaseProAdaptedWS, message: str):
             if isinstance(handler, logging.FileHandler):
                 root_logger.removeHandler(handler)
         root_logger.addHandler(logging.FileHandler(f"full/{now.strftime('%Y%m%d')}.log"))
-
         # closing and opening new files for each of the four message types for each of the
         # currencies we sub to returns a list of (key, value) tuples, for f_dict,
         # tuples will be (currency_name, dictionary)
         for sym, dic in ws.f_dict.items():
-
             # dic.items() returns a list of (key, value) tuples,
             # for dic, the tuples will be (msg_type, file_obj)
             for k, f in dic.items():
                 f.close()
-
             # making sure that we don't accidentally create a subdirectory full/full
-            if not os.path.exists("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d"))):
-                os.mkdir("{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d")))
-
+            if not os.path.exists("full/{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d"))):
+                os.mkdir("full/{s}/{d}".format(s=sym, d=ws.save_date.strftime("%Y%m%d")))
             # for each message type m, let the dictionary for each currency be the set {m : file_obj}
-            ws.f_dict[sym] = {m: open("{symbol}/{date}/CBP_{symbol}_full_{m}_{date}.csv".format(
+            ws.f_dict[sym] = {m: open("full/{symbol}/{date}/CBP_{symbol}_full_{m}_{date}.csv".format(
                 m=m, symbol=sym, date=ws.save_date.strftime("%Y%m%d")), "a", 500)
                 for m in ws.full_msg_types
             }
@@ -168,6 +164,7 @@ def main(**kwargs):
 
     # we now want to make this logger we have set up relavant so it is accessible
     # in all of our classes (because petur made a global variable :( )
+    global root_logger
     root_logger = logging.getLogger()
 
     # we specify the handler (in this case stream handler because we are writing)

@@ -36,7 +36,7 @@ def main():
                 date_dirs = [obj for obj in os.listdir() if os.path.isdir(obj)]
                 now_day = datetime.datetime.utcnow().day
                 for folder in date_dirs:
-                    if now_day - int(folder[-2:]) >= 0:
+                    if now_day - int(folder[-2:]) >= 1:
                         print(folder)
                         print("compressing" + folder)
                         shutil.make_archive(folder, "gztar", folder)
@@ -49,7 +49,7 @@ def main():
                 data = open(file, 'rb')
                 bucket.put_object(Key=file, Body=data)
                 os.remove(file)
-        time.sleep(3600 * 24)  # wait a day before polling again
+        time.sleep(3600 * 4)  # wait four hours before polling again
 
 
 if __name__ == "__main__":
