@@ -40,7 +40,7 @@ def main():
                 print(date_dirs)
                 now_date = datetime.datetime.utcnow().date()
                 for date_dir in date_dirs:
-                    # Convert folder name to date
+                    # Convert folder name to date obj
                     folder_date = parse(date_dir).date()
                     # If folder is not from today
                     if (now_date - folder_date).days >= 1:
@@ -59,7 +59,7 @@ def main():
                 with open(file, 'rb') as data:
                     bucket.put_object(Key=file, Body=data)
                 os.remove(file)
-        time.sleep(3600 * 4)  # wait four hours before polling again
+        time.sleep(3600 * 4)  # Wait four hours before polling again
 
 
 if __name__ == "__main__":
