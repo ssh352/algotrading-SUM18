@@ -3,7 +3,7 @@ import shutil
 import os
 import datetime
 import time
-
+from dateutil.parser import *
 
 # TODO TEST THIS!
 
@@ -34,9 +34,14 @@ def main():
             if os.path.isdir(file):  # If file is a BCH-USD folder or the like
                 os.chdir(file)
                 date_dirs = [obj for obj in os.listdir() if os.path.isdir(obj)]
-                now_day = datetime.datetime.utcnow().day
+                print(date_dirs)
+                now_date = datetime.datetime.utcnow().date()
                 for folder in date_dirs:
-                    if now_day - int(folder[-2:]) >= 1:
+                    folder_date = parse(folder).date()
+                    print(now_date)
+                    print(folder_date)
+                    print((now_date - folder_date).days)
+                    if (now_date - folder_date).days >= 1:
                         print(folder)
                         print("compressing" + folder)
                         shutil.make_archive(folder, "gztar", folder)
