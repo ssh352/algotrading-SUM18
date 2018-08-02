@@ -31,6 +31,7 @@ def main():
         file_list = [file for file in os.listdir()]
         print(file_list)
 
+        now_date = datetime.datetime.utcnow().date()
         for file in file_list:
             # If file is a "XXX-USD" or similar directory
             if os.path.isdir(file):
@@ -38,7 +39,6 @@ def main():
                 # List of date folders in XXX-USD folder
                 date_dirs = [obj for obj in os.listdir() if os.path.isdir(obj)]
                 print(date_dirs)
-                now_date = datetime.datetime.utcnow().date()
                 for date_dir in date_dirs:
                     # Convert folder name to date obj
                     folder_date = parse(date_dir).date()
@@ -56,9 +56,12 @@ def main():
                 os.chdir("..")
             # Else if log file, upload
             elif file.endswith(".log"):
-                with open(file, 'rb') as data:
-                    bucket.put_object(Key=file, Body=data)
-                os.remove(file)
+                log_date = parse(os.path.splitext(file)[0]).date()
+                # If log is older than one day upload and remove
+                if (now_date - log_date).days >= 1:
+                    with open(file, 'rb') as data:
+                        bucket.put_object(Key=file, Body=data)
+                    os.remove(file)
         print(datetime.datetime.utcnow())
         time.sleep(3600 * 4)  # Wait four hours before polling again
 
