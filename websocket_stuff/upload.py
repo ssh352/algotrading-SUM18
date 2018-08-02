@@ -50,7 +50,7 @@ def main():
                         shutil.rmtree(date_dir)
                         print("uploading" + date_dir)
                         with open(date_dir + ".tar.gz", "rb") as data:
-                            bucket.put_object(Key="full/" + file + date_dir, Body=data)
+                            bucket.put_object(Key="full/" + file + date_dir + ".tar.gz", Body=data)
                         os.remove(date_dir + ".tar.gz")
                         print("removing" + date_dir)
                 os.chdir("..")
