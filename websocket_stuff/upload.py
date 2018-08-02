@@ -59,6 +59,7 @@ def main():
                 with open(file, 'rb') as data:
                     bucket.put_object(Key=file, Body=data)
                 os.remove(file)
+        print(datetime.datetime.utcnow())
         time.sleep(3600 * 4)  # Wait four hours before polling again
 
 
