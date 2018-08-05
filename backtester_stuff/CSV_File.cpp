@@ -11,9 +11,11 @@
 
 using namespace Backtester;
 
+// Default Constructor
 Gem_CSV_File::Gem_CSV_File()
 {}
 
+// istream Constructor
 Gem_CSV_File::Gem_CSV_File(std::istream& in_f)
 {
     Gem_CSV_Row row;
@@ -26,10 +28,8 @@ Gem_CSV_File::Gem_CSV_File(std::istream& in_f)
     }
 }
 
-Gem_CSV_File::Gem_CSV_File(const Gem_CSV_File & other)
-:rows(other.rows)
-{
-}
+// Copy Constructor
+Gem_CSV_File::Gem_CSV_File(const Gem_CSV_File & other):rows(other.rows){}
 
 
 Gem_CSV_Row Gem_CSV_File::removeNextLine()
