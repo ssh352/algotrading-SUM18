@@ -30,7 +30,8 @@ namespace Backtester {
         friend std::istream& operator>>(std::istream& is, Gem_CSV_Row &row)
         {
             // reads each field until the next comma
-            for (int i = 0; i < NUM_COLUMNS-1; ++i) {
+            for (int i = 0; i < NUM_COLUMNS-1; ++i)
+            {
                 std::getline(is, row.dat[row.header[i]], ',');
             }
             
@@ -43,8 +44,7 @@ namespace Backtester {
         
     private:
         // the valid keys for each row, they correspond to fields in the actual CSV file
-        const std::vector<std::string> header = { "EventID", "EventDate", "EventTime", "EventMillis", "OrderID", "Options", "EventType", "Symbol", "OrderType", "Side", "LimitPrice", "OriginalQ", "GrossNotional", "FillPrice", "FillQ", "TotalExecQ", "RemainingQ", "AvgPrice"
-        };
+        const std::vector<std::string> header = { "EventID", "EventDate", "EventTime", "EventMillis", "OrderID", "Options", "EventType", "Symbol", "OrderType", "Side", "LimitPrice", "OriginalQ", "GrossNotional", "FillPrice", "FillQ", "TotalExecQ", "RemainingQ", "AvgPrice" };
         std::unordered_map<std::string, std::string> dat;
         
     };
