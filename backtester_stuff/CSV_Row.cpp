@@ -12,8 +12,14 @@
 #include <sstream>
 #include <stdexcept>
 
-using namespace Backtester;
+namespace Backtester {
 
+const std::vector<std::string> Gem_CSV_Row::header = { "EventID", "EventDate", "EventTime", "EventMillis", "OrderID",
+                                                 "Options", "EventType", "Symbol", "OrderType", "Side", "LimitPrice",
+                                                 "OriginalQ", "GrossNotional", "FillPrice", "FillQ", "TotalExecQ",
+                                                 "RemainingQ", "AvgPrice"
+};
+    
 Gem_CSV_Row::Gem_CSV_Row() {}
 
 void Gem_CSV_Row::PrintRow()
@@ -36,4 +42,6 @@ const std::string& Gem_CSV_Row::operator[](std::string key) const
     {
         throw std::invalid_argument("Invalid key: " + key);
     }
+}
+
 }

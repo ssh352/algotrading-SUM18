@@ -13,8 +13,6 @@
 #include <boost/filesystem.hpp>
 #include <vector>
 
-// TODO deal with this constructor hell, I'm tired of being fucked by these implicitly deleted copy constructors..
-
 namespace fs = boost::filesystem;
 namespace Backtester {
     
@@ -32,8 +30,8 @@ namespace Backtester {
             dataFiles.push_back(d.path().native());
         std::sort(dataFiles.begin(), dataFiles.end());
         std::ifstream in_f(dataFiles.front());
-        csv = Gem_CSV_File(in_f);
-        book = Level2OrderBook(csv);
+        csv = std::make_shared<Gem_CSV_File>(in_f);
+        book = Level2OrderBook(csv.get());
     }
     ShenOrderImbalance::ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, std::string dataDir)
     {
@@ -58,7 +56,7 @@ namespace Backtester {
     // goes in algoLogic
     void ShenOrderImbalance::onStep()
     {
-        auto nextRow = csv.peekNextLine();
+        auto nextRow = csv->peekNextLine();
         currentTime = boost::posix_time::time_from_string(nextRow["EventDate"] + ' ' + nextRow["EventTime"] + '.'
                                                           + nextRow["EventMillis"]);
     }

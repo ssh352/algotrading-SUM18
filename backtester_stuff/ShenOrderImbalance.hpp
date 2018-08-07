@@ -9,6 +9,7 @@
 #ifndef ShenOrderImbalance_hpp
 #define ShenOrderImbalance_hpp
 
+#include <memory>
 #include <stdio.h>
 #include <vector>
 
@@ -42,7 +43,7 @@ namespace Backtester {
     private:
         
         // the csv object the L2OrderBook object will reference
-        Gem_CSV_File csv;
+        std::shared_ptr<Gem_CSV_File> csv;
         
         // the orderbook corresponding to the current UTC date, this will need to be reinitialized for every passing day
         Level2OrderBook book;

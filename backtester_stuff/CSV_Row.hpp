@@ -44,7 +44,7 @@ namespace Backtester {
         
     private:
         // the valid keys for each row, they correspond to fields in the actual CSV file
-        const std::vector<std::string> header = { "EventID", "EventDate", "EventTime", "EventMillis", "OrderID", "Options", "EventType", "Symbol", "OrderType", "Side", "LimitPrice", "OriginalQ", "GrossNotional", "FillPrice", "FillQ", "TotalExecQ", "RemainingQ", "AvgPrice" };
+        static const std::vector<std::string> header;
         std::unordered_map<std::string, std::string> dat;
         
     };
