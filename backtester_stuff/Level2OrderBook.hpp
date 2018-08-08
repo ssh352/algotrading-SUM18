@@ -29,7 +29,7 @@ namespace Backtester
         Level2OrderBook() = default;
         
         // initializes book from a CBOE Gemini data file
-        Level2OrderBook(Gem_CSV_File* csv);
+        Level2OrderBook(std::shared_ptr<Gem_CSV_File> csv);
         
         // initializes book from other book
         Level2OrderBook(const Level2OrderBook& other);
@@ -68,7 +68,7 @@ namespace Backtester
         // first will be price level, second will be quantity at level
         std::vector<std::pair<decimal, decimal>> asks;
         std::vector<std::pair<decimal, decimal>> bids;
-        Gem_CSV_File *file;
+        std::shared_ptr<Gem_CSV_File> file;
         std::vector<std::pair<decimal, decimal>>::iterator bestBid;
         std::vector<std::pair<decimal, decimal>>::iterator bestAsk;
     };

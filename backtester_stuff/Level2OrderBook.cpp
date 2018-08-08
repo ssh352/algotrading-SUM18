@@ -17,7 +17,7 @@ namespace Backtester {
     // PUBLIC //
     ////////////
 
-    Level2OrderBook::Level2OrderBook(Gem_CSV_File* csv)
+    Level2OrderBook::Level2OrderBook(std::shared_ptr<Gem_CSV_File> csv)
     : file(csv)
     {
         // initialization step puts stuff on the book that was there from the previous day

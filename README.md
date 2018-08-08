@@ -1,7 +1,6 @@
 Backtester stuff will be in `backtester_stuff` and will be entirely C++ at least for the time being (CLI is fine).
-Dependencies for Backtester include Boost for its high precision decimal class and its datetime tools. It's also just a great library overall, so install it.
 
-Websocket stuff is in the aptly named corresponding folder.
+Websocket stuff is in `websocket_stuff`.
 
 Running driver.py
     0. Check if any new dependencies have been added
@@ -10,7 +9,7 @@ Running driver.py
     2. Linux: Similar to MacOS I think?
     3. Windows: I think the command should be `py -3 driver.py` to start it, and the same as Linux/Unix  to stop it.
 
-We are using Python ver. 3.7?
+We are using Python ver. 3.7x
 List of dependencies (use `pip` or `pip3` to install):
 1. webSocketApp
     https://pypi.org/project/websocket-client/
@@ -40,6 +39,15 @@ https://boto3.readthedocs.io/en/latest/
     5. You done bitch we outtie, use boto3 as u want
     4. See link below if confused
         https://boto3.readthedocs.io/en/latest/guide/quickstart.html#installation
+        
+We are using C++11 (because Apple sucks and doesn't release updated compilers for Xcode)
+Have `/usr/local/include` set as an include path in the target settings, and `/usr/local/lib` as a lib path in the same place.
+List of dependencies (use `homebrew` to install)
+1. boost, specifically  `date_time`, `filesystem`, and `multiprecision`. The specific library files to link to (in the Build Phases tab of the target settings) are:
+    - `libboost_system-mt.dylib`, `libboost_system.dylib`, `libboost_filesystem-mt.dylib`, `libboost_filesystem.dylib`, `libboost_date_time.dylib`
+2. Armadillo linear algebra library. There are performance related compiler flags but we'll worry about those later. The specific library files to link are:
+    - `libarmadillo.8.60.0.dylib`, `Accelerate.framework`
+    
 
 Credentials for AWS:
 general_credentials.csv contains the public and private api keys.
