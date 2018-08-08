@@ -30,9 +30,9 @@ namespace Backtester {
         ShenOrderImbalance(std::vector<std::string> _dataFiles);
         ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, std::vector<std::string> _dataFiles);
     protected:
-        // what to do at the next "step" after the current timestamp/event has been processed, this includes setting the
-        // currentTime variable and anything else specific to the BACKTESTER such as latency handling. Algorithm logic
-        // goes in algoLogic
+        // what to do at the next "step", immediately after a new timestamp is entered, this includes setting currentTime
+        // Also anything else specific to the BACKTESTER such as latency handling and keeping track of PnL in PNL_curve.
+        // Algorithm logic goes in algoLogic
         void onStep() override;
         
         // user implemented method that requires data handling logic to be implemented
@@ -51,6 +51,17 @@ namespace Backtester {
         // stores a list of std:string's corresponding to gemini csv files the strategy will be run against
         std::vector<std::string> dataFiles;
         
+        // represents how much inventory we have, >0 => long position, <0 => short position, 0 => no position
+        decimal inventory;
+        
+        // how much fiat we have on hand
+        decimal cash;
+        
+        // computes the total cost of a market buy from walking the book (doesn't actually remove liquidity)
+        decimal executeMarketBuy(Order& order);
+        
+        // computes the total received fiat from a market sell walking the book (doesn't actually remove liquidity)
+        decimal executeMarketSell(Order& order);
     };
     
 }

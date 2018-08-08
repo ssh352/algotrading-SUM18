@@ -25,9 +25,9 @@ namespace Backtester {
     
     void Engine::runBacktest()
     {
+        // TODO while loop here?
         onStep();
-        updateRunningReturnMean();
-        updateRunningReturnVar();
+        updateRunningStats();
         resolveOrders();
         if (time_duration(currentTime - lockoutStartTime).total_seconds() >= lockoutLength)
             inLockoutPeriod = false;
@@ -48,6 +48,7 @@ namespace Backtester {
     {
         if (sentOrders.empty())
             return;
+        // processing orders as long as the time they've been in transit is greater than or equal to LATENCY
         while (time_duration(currentTime - sentOrders.front().second).total_milliseconds() >= LATENCY)
         {
             onOrderArrival(sentOrders.front().first);
@@ -59,13 +60,21 @@ namespace Backtester {
     // PRIVATE //
     /////////////
     
-    void Engine::updateRunningReturnMean()
+    void Engine::updateRunningStats()
     {
-        // TODO implement per the wikipedia article
-    }
-    
-    void Engine::updateRunningReturnVar()
-    {
-        // TODO implement per the wikipedia article
+        ++numPeriods;
+        if (numPeriods == 1)
+        {
+            runningReturnMean = PNL_curve.back();
+            sumSquaredDiff = 0;
+            runningReturnVariance = sumSquaredDiff / 0; // will produce nan, that's ok!
+        }
+        else
+        {
+            decimal prevMean = runningReturnMean;
+            runningReturnMean += (PNL_curve.back() - runningReturnMean) / numPeriods;
+            sumSquaredDiff += (PNL_curve.back() - prevMean)*(PNL_curve.back() - runningReturnMean);
+            runningReturnVariance = sumSquaredDiff / (numPeriods - 1);
+        }
     }
 }

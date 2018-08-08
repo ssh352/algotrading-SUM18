@@ -60,6 +60,9 @@ namespace Backtester
         // returns n closest bids from the midprice
         std::vector<std::pair<decimal, decimal>> nClosestBids(size_t n);
         decimal midPrice;
+        
+        std::vector<std::pair<decimal, decimal>>::iterator bestBid;
+        std::vector<std::pair<decimal, decimal>>::iterator bestAsk;
     
     private:
         
@@ -69,8 +72,7 @@ namespace Backtester
         std::vector<std::pair<decimal, decimal>> asks;
         std::vector<std::pair<decimal, decimal>> bids;
         std::shared_ptr<Gem_CSV_File> file;
-        std::vector<std::pair<decimal, decimal>>::iterator bestBid;
-        std::vector<std::pair<decimal, decimal>>::iterator bestAsk;
+
     };
     
 }

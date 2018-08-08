@@ -6,24 +6,32 @@
 //  Copyright © 2018 Alec Goldberg. All rights reserved.
 //
 
+#include <limits>
+
 #include "Order.hpp"
 
-using namespace Backtester;
+namespace Backtester {
     
-Order::Order()
-:orderType(0)
+    // assumed Market order
+    Order::Order(decimal _quantityOrdered)
+    : orderType(OrderTypes::Market), priceLevel(std::numeric_limits<decimal>::quiet_NaN()),
+      quantityOrdered(_quantityOrdered)
     {
+        
+    }
+    
+    // assumed Limit order
+    Order::Order(decimal _priceLevel, decimal _quantityOrdered)
+    : orderType(OrderTypes::Limit), priceLevel(_priceLevel), quantityOrdered(_quantityOrdered)
+    {
+        
+    }
+    
+    Order::Order(const Order &otherOrder)
+    : orderType(otherOrder.orderType), priceLevel(otherOrder.priceLevel), quantityOrdered(otherOrder.quantityOrdered)
+    {
+        
     }
 
-Order::Order(int _orderType)
-:orderType(_orderType)
-{
-    
-}
-
-Order::Order(const Order &otherOrder)
-:orderType(otherOrder.orderType)
-{
-        
 }
 

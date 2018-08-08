@@ -34,11 +34,15 @@ namespace Backtester
         decimal runningReturnMean;
         // see above
         decimal runningReturnVariance;
+        // used in algo above
+        decimal sumSquaredDiff;
         // 3-Month T-Bill ~2% used as proxy for rf rate
         const decimal RISK_FREE_RATE = 2;
         
         // the (constant for now) latency in milliseconds we assume to be between sending and receiving an order
         const unsigned LATENCY;
+        
+        unsigned long numPeriods = 0;
         
         // this is just an idea.. But to prevent overestimation of profits, might be a good idea to not allow the algo
         // to do too many trades in a short time. This is because in reality we'd have at most a few trades before we
@@ -50,9 +54,7 @@ namespace Backtester
         unsigned lockoutLength;
         
         // see wiki page above
-        void updateRunningReturnMean();
-        // see above
-        void updateRunningReturnVar();
+        void updateRunningStats();
         
     public:
 
@@ -68,16 +70,16 @@ namespace Backtester
         
         // the datetime that the backtester is at. Crucial that this is set currently so that latency handling is done
         boost::posix_time::ptime currentTime;
-        
+                
         // will hold orders that have been sent but not yet received (due to latency) by the "exchange"
         std::queue<std::pair<Order, boost::posix_time::ptime>> sentOrders;
         
         // resolves an orders that have arrived after the next timestep has arrived and before any further algo logic
         void resolveOrders();
         
-        // what to do at the next "step" after the current timestamp/event has been processed, this includes setting the
-        // currentTime variable and anything else specific to the BACKTESTER such as latency handling. Algorithm logic
-        // goes in algoLogic
+        // what to do at the next "step", immediately after a new timestamp is entered, this includes setting currentTime
+        // Also anything else specific to the BACKTESTER such as latency handling and keeping track of PnL in PNL_curve.
+        // Algorithm logic goes in algoLogic
         virtual void onStep() = 0;
         // user implemented method that requires data handling logic to be implemented
         virtual void algoLogic() = 0;
