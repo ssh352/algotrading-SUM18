@@ -27,8 +27,12 @@ namespace Backtester {
     : Engine()
     {
         std::vector<std::string> tmpVec;
+        
         for (fs::directory_entry& d: fs::directory_iterator(dataDir))
+        {
             dataFiles.push_back(d.path().native());
+        }
+        
         std::sort(dataFiles.begin(), dataFiles.end());
         std::ifstream in_f(dataFiles.front());
         csv = std::make_shared<Gem_CSV_File>(in_f);
@@ -39,23 +43,24 @@ namespace Backtester {
     : Engine(_LATENCY, _lockoutLength)
     {
         for (auto& p : fs::directory_iterator(dataDir))
+        {
             dataFiles.push_back(p.path().native());
+        }
         
         std::sort(dataFiles.begin(), dataFiles.end());
-
     }
     
     // here the ctor is passed the actual list of (sorted chronologically) files to use
     ShenOrderImbalance::ShenOrderImbalance(std::vector<std::string> _dataFiles)
     : Engine(), dataFiles(_dataFiles)
     {
-
+        // process csv files
     }
     
     ShenOrderImbalance::ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, std::vector<std::string> _dataFiles)
     : Engine (_LATENCY, _lockoutLength), dataFiles(_dataFiles)
     {
-
+        // process csv files w latency
     }
     
     ///////////////

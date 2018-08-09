@@ -32,10 +32,13 @@ namespace Backtester
         // Online algorithm will update mean and var as per the following link:
         // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
         decimal runningReturnMean;
+        
         // see above
         decimal runningReturnVariance;
+        
         // used in algo above
         decimal sumSquaredDiff;
+        
         // 3-Month T-Bill ~2% used as proxy for rf rate
         const decimal RISK_FREE_RATE = 2;
         
@@ -44,10 +47,9 @@ namespace Backtester
         
         unsigned long numPeriods = 0;
         
-        // this is just an idea.. But to prevent overestimation of profits, might be a good idea to not allow the algo
-        // to do too many trades in a short time. This is because in reality we'd have at most a few trades before we
-        // move the price too much, but in this backtester we can't really simulate this (as this would require some
-        // crazy fucking math). This bool will tell the derived class that we implement whether we're allowed to trade.
+        /* this is just an idea... But to prevent overestimation of profits, might be a good idea to not allow the algo to do too many trades in a short time. This is because in reality we'd have at most a few trades before we move the price too much, but in this backtester we can't really simulate this (as this would require some crazy fucking meth). This bool will tell the derived class that we implement whether we're allowed to trade.
+         */
+        
         bool inLockoutPeriod;
         
         // how long we wish to be in trade lockout in seconds

@@ -26,8 +26,11 @@ namespace Backtester {
         asks.reserve(initials.size()); // it would avoid ANY resizing
         
         std::vector<std::pair<decimal, decimal>>* temp;
+        
+        // process initial Gem_CSV_Row lines
         for (Gem_CSV_Row& row : initials)
         {
+            // assign temp according to order "side"
             temp = (row["Side"] == "buy" ? &bids : &asks);
             
             if (temp->empty())
@@ -84,6 +87,8 @@ namespace Backtester {
             return;
         
         std::vector<std::pair<decimal, decimal>>::iterator it;
+        
+        // if price > midprice we look in asks
         if (price > midPrice)
         {
             it = asks.begin();
@@ -94,6 +99,7 @@ namespace Backtester {
                 bestAsk = it;
             }
         }
+        // if price < midprice we look in bids
         else
         {
             it = bids.begin();
@@ -126,12 +132,14 @@ namespace Backtester {
         
         std::vector<std::pair<decimal, decimal>>::iterator it;
         
+        // if price > midprice we look in asks
         if (price > midPrice)
         {
             it = asks.begin();
             while(it != asks.end() && it->first < price)
                 ++it;
         }
+        // if price < midprice we look in bids
         else
         {
             it = bids.begin();
@@ -218,14 +226,18 @@ namespace Backtester {
     void Level2OrderBook::processCSVLine(const Gem_CSV_Row& line)
     {
         std::string type = line["EventType"];
+        
+        // if order type is place we add to price level specified
         if (type == "Place")
         {
             addToPriceLevel(decimal(line["LimtPrice"]), decimal(line["OriginalQ"]));
         }
+        // if order type is cancel we remove but DO NOT fill
         else if (type == "Cancel")
         {
             removeFromPriceLevel(decimal(line["LimitPrice"]), decimal(line["OriginalQ"]));
         }
+        // if order type is fill we will remove from both asks and bids
         else if (type == "Fill")
         {
             if (line["OrderType"] == "Limit")

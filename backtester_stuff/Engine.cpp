@@ -26,6 +26,7 @@ namespace Backtester {
     void Engine::runBacktest()
     {
         // TODO while loop here?
+        // Seems like while(recivieving orders)
         onStep();
         updateRunningStats();
         resolveOrders();
