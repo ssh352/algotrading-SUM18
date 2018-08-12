@@ -25,10 +25,10 @@ namespace Backtester {
         // dataDir should be the path to a directory containing only CBOE Gemini orderbook data csv's, will fill
         // dataFiles with an std::string corresponding to each file in dataDir
         ShenOrderImbalance(std::string dataDir);
-        ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, std::string dataDir);
+        ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, decimal _takerFee, std::string dataDir);
         // here the ctor is passed the actual list of (sorted chronologically) files to use
         ShenOrderImbalance(std::vector<std::string> _dataFiles);
-        ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, std::vector<std::string> _dataFiles);
+        ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, decimal _takerFee, std::vector<std::string> _dataFiles);
     protected:
         // what to do at the next "step", immediately after a new timestamp is entered, this includes setting currentTime
         // Also anything else specific to the BACKTESTER such as latency handling and keeping track of PnL in PNL_curve.
@@ -56,6 +56,11 @@ namespace Backtester {
         
         // how much fiat we have on hand
         decimal cash;
+        
+        // fee (in absolute rate, eg 3% = 0.03) that the exchange enforces for taking liquidity from the book
+        decimal takerFee;
+        
+        // METHODS //
         
         // computes the total cost of a market buy from walking the book (doesn't actually remove liquidity)
         decimal executeMarketBuy(Order& order);

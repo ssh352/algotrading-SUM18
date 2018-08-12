@@ -24,7 +24,7 @@ namespace Backtester {
     // dataDir should be the path to a directory containing only CBOE Gemini orderbook data csv's, will fill
     // dataFiles with an std::string corresponding to each file in dataDir
     ShenOrderImbalance::ShenOrderImbalance(std::string dataDir)
-    : Engine()
+    : Engine(), takerFee("0.003")
     {
         std::vector<std::string> tmpVec;
         for (fs::directory_entry& d: fs::directory_iterator(dataDir))
@@ -35,8 +35,9 @@ namespace Backtester {
         book = Level2OrderBook(csv);
     }
     
-    ShenOrderImbalance::ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, std::string dataDir)
-    : Engine(_LATENCY, _lockoutLength)
+    ShenOrderImbalance::ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, decimal _takerFee,
+                                           std::string dataDir)
+    : Engine(_LATENCY, _lockoutLength), takerFee(_takerFee)
     {
         for (auto& p : fs::directory_iterator(dataDir))
             dataFiles.push_back(p.path().native());
@@ -47,13 +48,14 @@ namespace Backtester {
     
     // here the ctor is passed the actual list of (sorted chronologically) files to use
     ShenOrderImbalance::ShenOrderImbalance(std::vector<std::string> _dataFiles)
-    : Engine(), dataFiles(_dataFiles)
+    : Engine(), dataFiles(_dataFiles), takerFee("0.003")
     {
 
     }
     
-    ShenOrderImbalance::ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, std::vector<std::string> _dataFiles)
-    : Engine (_LATENCY, _lockoutLength), dataFiles(_dataFiles)
+    ShenOrderImbalance::ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, decimal _takerFee,
+                                           std::vector<std::string> _dataFiles)
+    : Engine (_LATENCY, _lockoutLength), dataFiles(_dataFiles), takerFee(_takerFee)
     {
 
     }
@@ -86,7 +88,7 @@ namespace Backtester {
             // market buy
             if (order.quantityOrdered > 0)
             {
-                decimal costOfBuy = executeMarketBuy(order);
+                decimal costOfBuy = executeMarketBuy(order) * (decimal(1) + takerFee);
                 if (cash >= costOfBuy)
                     cash -= costOfBuy;
                 else
@@ -96,7 +98,7 @@ namespace Backtester {
             // market sell
             else
             {
-                cash += executeMarketSell(order);
+                cash += executeMarketSell(order) * (decimal(1) - takerFee);
             }
         }
         // Limit order
