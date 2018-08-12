@@ -24,7 +24,7 @@ namespace Backtester {
     // dataDir should be the path to a directory containing only CBOE Gemini orderbook data csv's, will fill
     // dataFiles with an std::string corresponding to each file in dataDir
     ShenOrderImbalance::ShenOrderImbalance(std::string dataDir)
-    : Engine()
+    : Engine(), firstStep(true)
     {
         std::vector<std::string> tmpVec;
         
@@ -40,7 +40,7 @@ namespace Backtester {
     }
     
     ShenOrderImbalance::ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, std::string dataDir)
-    : Engine(_LATENCY, _lockoutLength)
+    : Engine(_LATENCY, _lockoutLength), firstStep(true)
     {
         for (auto& p : fs::directory_iterator(dataDir))
         {
@@ -52,13 +52,13 @@ namespace Backtester {
     
     // here the ctor is passed the actual list of (sorted chronologically) files to use
     ShenOrderImbalance::ShenOrderImbalance(std::vector<std::string> _dataFiles)
-    : Engine(), dataFiles(_dataFiles)
+    : Engine(), dataFiles(_dataFiles), firstStep(true)
     {
         // process csv files
     }
     
     ShenOrderImbalance::ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, std::vector<std::string> _dataFiles)
-    : Engine (_LATENCY, _lockoutLength), dataFiles(_dataFiles)
+    : Engine (_LATENCY, _lockoutLength), dataFiles(_dataFiles), firstStep(true)
     {
         // process csv files w latency
     }
@@ -75,7 +75,109 @@ namespace Backtester {
         auto nextRow = csv->peekNextLine();
         currentTime = boost::posix_time::time_from_string(nextRow["EventDate"] + ' ' + nextRow["EventTime"] + '.'
                                                           + nextRow["EventMillis"]);
+        
+        // calculate VOI
+        currentVOI = calculateVOI(firstStep);
+        
+        // calculate OIR
+        currentOIR = calculateOIR();
+        
+        // calculate MDP
+        currentMDP = calculateMDP(firstStep);
+        
+        // calculate instantaneous bid-ask spread
+        currentBidAskSpread = calculateBidAskSpread();
+        
+        pastBestAsk = book.getBestAsk();
+        pastBestBid = book.getBestBid();
     }
+    
+    decimal ShenOrderImbalance::calculateVOI(bool firstStep)
+    {
+        if(firstStep)
+        {
+            pastBestAsk = book.getBestAsk();
+            pastBestBid = book.getBestBid();
+            return -1;
+        }
+        else
+        {
+            decimal lambdaBidVolume = 0;
+            decimal lambdaAskVolume = 0;
+            std::pair<decimal,decimal> currentBestAsk = book.getBestAsk();
+            std::pair<decimal,decimal> currentBestBid = book.getBestBid();
+            
+            // calculate bid lambda
+            if(currentBestBid.first < pastBestBid.first)
+            {
+                lambdaBidVolume = 0;
+            }
+            else if(currentBestAsk.first > pastBestAsk.first)
+            {
+                lambdaBidVolume = currentBestBid.second - pastBestBid.second;
+            }
+            else
+            {
+                lambdaBidVolume = currentBestBid.second;
+            }
+            
+            // calculate ask lambda
+            if(currentBestAsk.first < pastBestAsk.first)
+            {
+                lambdaAskVolume = 0;
+            }
+            else if(currentBestAsk.first > pastBestAsk.first)
+            {
+                lambdaAskVolume = currentBestAsk.second - pastBestAsk.second;
+            }
+            else
+            {
+                lambdaAskVolume = currentBestAsk.second;
+            }
+             return lambdaBidVolume - lambdaAskVolume;
+        }
+    }
+    
+    decimal ShenOrderImbalance::calculateOIR()
+    {
+        std::pair<decimal,decimal> currentBestAsk = book.getBestAsk();
+        std::pair<decimal,decimal> currentBestBid = book.getBestBid();
+        
+        return (currentBestBid.second - currentBestAsk.second)/(currentBestBid.second + currentBestAsk.second);
+    }
+    
+    decimal ShenOrderImbalance::calculateMDP(bool firstStep)
+    {
+        if(firstStep)
+        {
+            pastMidPrice = book.getMidPrice();
+            // set pastTransactionVolume
+            // set pastTradeVolumeCurrency
+            firstStep = false;
+            secondStep = true;
+            return -1;
+        }
+        else if(secondStep)
+        {
+            decimal temp = pastMidPrice;
+            pastMidPrice = book.getMidPrice();
+            pastAverageTradePrice = temp;
+            // set pastTransactionVolume
+            // set pastTradeVolumeCurrency
+            return book.getMidPrice() - (book.getMidPrice() + temp)/2;
+        }
+        else
+        {
+            // calculate MDP (average trade price at time t - Mid price average of t,t-1)
+            return -1;
+        }
+    }
+    
+    decimal ShenOrderImbalance::calculateBidAskSpread()
+    {
+        return book.getBestAsk().first - book.getBestBid().first;
+    }
+    
     // user implemented method that requires data handling logic to be implemented
     void ShenOrderImbalance::algoLogic()
     {
@@ -118,52 +220,12 @@ namespace Backtester {
     // computes the total cost of a market buy from walking the book (doesn't actually remove liquidity)
     decimal ShenOrderImbalance::executeMarketBuy(Order& order)
     {
-        decimal quantity = order.quantityOrdered;
-        decimal totalCost = 0;
-        auto best = book.bestAsk;
-        while (quantity > 0)
-        {
-            // case where we can completely fill at one level
-            if (quantity <= best->second)
-            {
-                totalCost += quantity * best->first;
-                quantity -= best->second;
-            }
-            // case where we must walk the book to get completely filled
-            else
-            {
-                quantity -= best->second;
-                totalCost += best->second * best->first;
-                ++best;
-            }
-        }
-        
-        return totalCost;
+        return book.calculateTotalOrderCost(order.quantityOrdered, true);
     }
     
     // computes the total received fiat from a market sell walking the book (doesn't actually remove liquidity)
     decimal ShenOrderImbalance::executeMarketSell(Order& order)
     {
-        decimal quantity = order.quantityOrdered;
-        decimal totalRecv = 0;
-        auto best = book.bestBid;
-        while (quantity < 0)
-        {
-            // case where we can completely fill at one level
-            if (quantity <= best->second)
-            {
-                totalRecv += -1 * quantity * best->first;
-                quantity += best->second;
-            }
-            // case where we must walk the book to get completely filled
-            else
-            {
-                quantity += best->second;
-                totalRecv += best->second * best->first;
-                ++best;
-            }
-        }
-        
-        return totalRecv;
+       return book.calculateTotalOrderCost(order.quantityOrdered, false);
     }
 }

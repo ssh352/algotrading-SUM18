@@ -63,6 +63,28 @@ namespace Backtester {
         
         // computes the total received fiat from a market sell walking the book (doesn't actually remove liquidity)
         decimal executeMarketSell(Order& order);
+        
+        decimal calculateVOI(bool firstStep);
+        
+        decimal calculateOIR();
+        
+        decimal calculateMDP(bool firstStep);
+        
+        decimal calculateBidAskSpread();
+        
+        bool firstStep;
+        bool secondStep;
+        std::pair<decimal, decimal> pastBestBid;
+        std::pair<decimal, decimal> pastBestAsk;
+        decimal pastMidPrice;
+        decimal pastAverageTradePrice;
+        decimal pastTradeVolumeCurrency;
+        decimal pastTransactionVolume;
+        
+        decimal currentVOI;
+        decimal currentOIR;
+        decimal currentMDP;
+        decimal currentBidAskSpread;
     };
     
 }

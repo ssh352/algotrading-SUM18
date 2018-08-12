@@ -267,7 +267,58 @@ namespace Backtester {
     {
         return std::vector<std::pair<decimal, decimal>>(bids.begin(), bids.begin() + n);
     }
-
+    
+    decimal Level2OrderBook::calculateTotalOrderCost(decimal quantity, bool buy)
+    {
+        decimal totalCost = 0;
+        
+        if(buy)
+        {
+            while (quantity > 0)
+            {
+                // case where we can completely fill at one level
+                if (quantity <= bestAsk->second)
+                {
+                    // make get cost a function of l2
+                    totalCost += quantity * bestAsk->first;
+                    quantity -= bestAsk->second;
+                }
+                // case where we must walk the book to get completely filled
+                else
+                {
+                    quantity -= bestAsk->second;
+                    totalCost += bestAsk->first * bestAsk->second;
+                    ++bestAsk; //what to do here
+                }
+            }
+        }
+        else
+        {
+            while (quantity < 0)
+            {
+                // case where we can completely fill at one level
+                if (quantity <= bestBid->second)
+                {
+                    totalCost += -1 * quantity * bestBid->first;
+                    quantity += bestBid->second;
+                }
+                // case where we must walk the book to get completely filled
+                else
+                {
+                    quantity += bestBid->second;
+                    totalCost += bestBid->second * bestBid->first;
+                    ++bestBid; // what to do here
+                }
+            }
+        }
+        return totalCost;
+    }
+    
+    decimal Level2OrderBook::getMidPrice()
+    {
+        return midPrice;
+    }
+    
     /////////////
     // PRIVATE //
     /////////////
@@ -278,4 +329,13 @@ namespace Backtester {
         midPrice = (bestBid->first + bestAsk->first) / 2;
     }
     
+    std::pair<decimal, decimal> Level2OrderBook::getBestBid()
+    {
+        return *bestBid;
+    }
+    
+    std::pair<decimal, decimal> Level2OrderBook::getBestAsk()
+    {
+        return *bestAsk;
+    }
 }
