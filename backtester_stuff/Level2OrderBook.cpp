@@ -26,8 +26,11 @@ namespace Backtester {
         asks.reserve(initials.size()); // it would avoid ANY resizing
         
         std::vector<std::pair<decimal, decimal>>* temp;
+        
+        // process initial Gem_CSV_Row lines
         for (Gem_CSV_Row& row : initials)
         {
+            // assign temp according to order "side"
             temp = (row["Side"] == "buy" ? &bids : &asks);
             
             if (temp->empty())
@@ -84,6 +87,8 @@ namespace Backtester {
             return;
         
         std::vector<std::pair<decimal, decimal>>::iterator it;
+        
+        // if price > midprice we look in asks
         if (price > midPrice)
         {
             it = asks.begin();
@@ -94,6 +99,7 @@ namespace Backtester {
                 bestAsk = it;
             }
         }
+        // if price < midprice we look in bids
         else
         {
             it = bids.begin();
@@ -126,12 +132,14 @@ namespace Backtester {
         
         std::vector<std::pair<decimal, decimal>>::iterator it;
         
+        // if price > midprice we look in asks
         if (price > midPrice)
         {
             it = asks.begin();
             while(it != asks.end() && it->first < price)
                 ++it;
         }
+        // if price < midprice we look in bids
         else
         {
             it = bids.begin();
@@ -218,14 +226,18 @@ namespace Backtester {
     void Level2OrderBook::processCSVLine(const Gem_CSV_Row& line)
     {
         std::string type = line["EventType"];
+        
+        // if order type is place we add to price level specified
         if (type == "Place")
         {
             addToPriceLevel(decimal(line["LimtPrice"]), decimal(line["OriginalQ"]));
         }
+        // if order type is cancel we remove but DO NOT fill
         else if (type == "Cancel")
         {
             removeFromPriceLevel(decimal(line["LimitPrice"]), decimal(line["OriginalQ"]));
         }
+        // if order type is fill we will remove from both asks and bids
         else if (type == "Fill")
         {
             if (line["OrderType"] == "Limit")
@@ -255,7 +267,58 @@ namespace Backtester {
     {
         return std::vector<std::pair<decimal, decimal>>(bids.begin(), bids.begin() + n);
     }
-
+    
+    decimal Level2OrderBook::calculateTotalOrderCost(decimal quantity, bool buy)
+    {
+        decimal totalCost = 0;
+        
+        if(buy)
+        {
+            while (quantity > 0)
+            {
+                // case where we can completely fill at one level
+                if (quantity <= bestAsk->second)
+                {
+                    // make get cost a function of l2
+                    totalCost += quantity * bestAsk->first;
+                    quantity -= bestAsk->second;
+                }
+                // case where we must walk the book to get completely filled
+                else
+                {
+                    quantity -= bestAsk->second;
+                    totalCost += bestAsk->first * bestAsk->second;
+                    ++bestAsk; //what to do here
+                }
+            }
+        }
+        else
+        {
+            while (quantity < 0)
+            {
+                // case where we can completely fill at one level
+                if (quantity <= bestBid->second)
+                {
+                    totalCost += -1 * quantity * bestBid->first;
+                    quantity += bestBid->second;
+                }
+                // case where we must walk the book to get completely filled
+                else
+                {
+                    quantity += bestBid->second;
+                    totalCost += bestBid->second * bestBid->first;
+                    ++bestBid; // what to do here
+                }
+            }
+        }
+        return totalCost;
+    }
+    
+    decimal Level2OrderBook::getMidPrice()
+    {
+        return midPrice;
+    }
+    
     /////////////
     // PRIVATE //
     /////////////
@@ -266,4 +329,13 @@ namespace Backtester {
         midPrice = (bestBid->first + bestAsk->first) / 2;
     }
     
+    std::pair<decimal, decimal> Level2OrderBook::getBestBid()
+    {
+        return *bestBid;
+    }
+    
+    std::pair<decimal, decimal> Level2OrderBook::getBestAsk()
+    {
+        return *bestAsk;
+    }
 }

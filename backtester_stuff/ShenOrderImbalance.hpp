@@ -22,19 +22,20 @@ namespace Backtester {
     class ShenOrderImbalance : public Engine
     {
     public:
-        // dataDir should be the path to a directory containing only CBOE Gemini orderbook data csv's, will fill
-        // dataFiles with an std::string corresponding to each file in dataDir
+        /*  dataDir should be the path to a directory containing only CBOE Gemini orderbook data csv's, will fill dataFiles with an std::string corresponding to each file in dataDir
+         */
         ShenOrderImbalance(std::string dataDir);
         ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, decimal _takerFee, std::string dataDir);
         // here the ctor is passed the actual list of (sorted chronologically) files to use
         ShenOrderImbalance(std::vector<std::string> _dataFiles);
         ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, decimal _takerFee, std::vector<std::string> _dataFiles);
     protected:
-        // what to do at the next "step", immediately after a new timestamp is entered, this includes setting currentTime
-        // Also anything else specific to the BACKTESTER such as latency handling and keeping track of PnL in PNL_curve.
-        // Algorithm logic goes in algoLogic
+        
+        /* what to do at the next "step", immediately after a new timestamp is entered, this includes setting currentTime, also anything else specific to the BACKTESTER such as latency handling andkeeping track of PnL in PNL_curve.
+         */
         void onStep() override;
         
+        // Algorithm logic goes in algoLogic
         // user implemented method that requires data handling logic to be implemented
         void algoLogic() override;
         
@@ -67,6 +68,28 @@ namespace Backtester {
         
         // computes the total received fiat from a market sell walking the book (doesn't actually remove liquidity)
         decimal executeMarketSell(Order& order);
+        
+        decimal calculateVOI(bool firstStep);
+        
+        decimal calculateOIR();
+        
+        decimal calculateMDP(bool firstStep);
+        
+        decimal calculateBidAskSpread();
+        
+        bool firstStep;
+        bool secondStep;
+        std::pair<decimal, decimal> pastBestBid;
+        std::pair<decimal, decimal> pastBestAsk;
+        decimal pastMidPrice;
+        decimal pastAverageTradePrice;
+        decimal pastTradeVolumeCurrency;
+        decimal pastTransactionVolume;
+        
+        decimal currentVOI;
+        decimal currentOIR;
+        decimal currentMDP;
+        decimal currentBidAskSpread;
     };
     
 }
