@@ -1,11 +1,8 @@
 import time
-import boto3
 import logging
-import lzma
 import os
 import signal
 import sys
-import shutil
 from datetime import date as d
 from datetime import datetime as dt
 from dateutil import parser as dparser
