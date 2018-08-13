@@ -9,6 +9,7 @@
 #ifndef ShenOrderImbalance_hpp
 #define ShenOrderImbalance_hpp
 
+#include <armadillo>
 #include <memory>
 #include <stdio.h>
 #include <vector>
@@ -61,6 +62,20 @@ namespace Backtester {
         // fee (in absolute rate, eg 3% = 0.03) that the exchange enforces for taking liquidity from the book
         decimal takerFee;
         
+        bool firstStep;
+        bool secondStep;
+        std::pair<decimal, decimal> pastBestBid;
+        std::pair<decimal, decimal> pastBestAsk;
+        decimal pastMidPrice;
+        decimal pastAverageTradePrice;
+        decimal pastTradeVolumeCurrency;
+        decimal pastTransactionVolume;
+        
+        decimal currentVOI;
+        decimal currentOIR;
+        decimal currentMDP;
+        decimal currentBidAskSpread;
+        
         // METHODS //
         
         // computes the total cost of a market buy from walking the book (doesn't actually remove liquidity)
@@ -77,19 +92,12 @@ namespace Backtester {
         
         decimal calculateBidAskSpread();
         
-        bool firstStep;
-        bool secondStep;
-        std::pair<decimal, decimal> pastBestBid;
-        std::pair<decimal, decimal> pastBestAsk;
-        decimal pastMidPrice;
-        decimal pastAverageTradePrice;
-        decimal pastTradeVolumeCurrency;
-        decimal pastTransactionVolume;
+        // Given a matrix equation y=B*X...
+        // observations are the "y" vector, each colvec in features is a column vector of the coefficient matrix B
+        arma::mat getLinRegCoefficients(arma::mat observations, std::vector<arma::colvec> features);
+        // observations are the "y" vector, features is the coefficient matrix B
+        arma::mat getLinRegCoefficients(arma::mat observations, arma::mat features);
         
-        decimal currentVOI;
-        decimal currentOIR;
-        decimal currentMDP;
-        decimal currentBidAskSpread;
     };
     
 }

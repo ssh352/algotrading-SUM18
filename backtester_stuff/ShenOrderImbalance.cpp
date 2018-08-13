@@ -95,7 +95,7 @@ namespace Backtester {
     
     decimal ShenOrderImbalance::calculateVOI(bool firstStep)
     {
-        if(firstStep)
+        if (firstStep)
         {
             pastBestAsk = book.getBestAsk();
             pastBestBid = book.getBestBid();
@@ -103,39 +103,39 @@ namespace Backtester {
         }
         else
         {
-            decimal lambdaBidVolume = 0;
-            decimal lambdaAskVolume = 0;
+            decimal deltaBidVolume = 0;
+            decimal deltaAskVolume = 0;
             std::pair<decimal,decimal> currentBestAsk = book.getBestAsk();
             std::pair<decimal,decimal> currentBestBid = book.getBestBid();
             
-            // calculate bid lambda
-            if(currentBestBid.first < pastBestBid.first)
+            // calculate bid delta
+            if (currentBestBid.first < pastBestBid.first)
             {
-                lambdaBidVolume = 0;
+                deltaBidVolume = 0;
             }
-            else if(currentBestAsk.first > pastBestAsk.first)
+            else if (currentBestAsk.first > pastBestAsk.first)
             {
-                lambdaBidVolume = currentBestBid.second - pastBestBid.second;
+                deltaBidVolume = currentBestBid.second;
             }
             else
             {
-                lambdaBidVolume = currentBestBid.second;
+                deltaBidVolume = currentBestBid.second - pastBestBid.second;
             }
             
-            // calculate ask lambda
-            if(currentBestAsk.first < pastBestAsk.first)
+            // calculate ask delta
+            if (currentBestAsk.first > pastBestAsk.first)
             {
-                lambdaAskVolume = 0;
+                deltaAskVolume = 0;
             }
-            else if(currentBestAsk.first > pastBestAsk.first)
+            else if (currentBestAsk.first > pastBestAsk.first)
             {
-                lambdaAskVolume = currentBestAsk.second - pastBestAsk.second;
+                deltaAskVolume = currentBestAsk.second;
             }
             else
             {
-                lambdaAskVolume = currentBestAsk.second;
+                deltaAskVolume = currentBestAsk.second - pastBestAsk.second;
             }
-             return lambdaBidVolume - lambdaAskVolume;
+            return deltaBidVolume - deltaAskVolume;
         }
     }
     
@@ -228,5 +228,23 @@ namespace Backtester {
     decimal ShenOrderImbalance::executeMarketSell(Order& order)
     {
        return book.calculateTotalOrderCost(order.quantityOrdered, false);
+    }
+    
+    // Given a matrix equation y=B*X...
+    // observations are the "y" vector, each colvec in features is a column vector of the coefficient matrix B
+    arma::mat ShenOrderImbalance::getLinRegCoefficients(arma::mat observations, std::vector<arma::colvec> features)
+    {
+        arma::mat X(0, features.size());
+        for (arma::colvec colvec : features)
+        {
+            X.insert_cols(0, colvec);
+        }
+        return arma::inv(X.t() * X) * X * observations;
+    }
+    
+    // observations are the "y" vector, features is the coefficient matrix B with each column
+    arma::mat ShenOrderImbalance::getLinRegCoefficients(arma::mat observations, arma::mat features)
+    {
+        return arma::inv(features.t() * features) * features * observations;
     }
 }
