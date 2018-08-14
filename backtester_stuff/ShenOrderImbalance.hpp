@@ -13,6 +13,7 @@
 #include <memory>
 #include <stdio.h>
 #include <vector>
+#include <deque>
 
 #include "Engine.hpp"
 #include "CSV_File.hpp"
@@ -62,8 +63,12 @@ namespace Backtester {
         // fee (in absolute rate, eg 3% = 0.03) that the exchange enforces for taking liquidity from the book
         decimal takerFee;
         
+        // the minimum forecasted change needed to justify a change in position (denominated in USD)
+        const decimal minForecastDelta;
+        
         bool firstStep;
         bool secondStep;
+        bool warmedUp;
         std::pair<decimal, decimal> pastBestBid;
         std::pair<decimal, decimal> pastBestAsk;
         decimal pastMidPrice;
@@ -76,6 +81,12 @@ namespace Backtester {
         decimal currentMDP;
         decimal currentBidAskSpread;
         
+        const unsigned numLaggedTicks;
+        
+        std::deque<decimal> VOI;
+        std::deque<decimal> OIR;
+        std::deque<decimal> MPB;
+        
         // METHODS //
         
         // computes the total cost of a market buy from walking the book (doesn't actually remove liquidity)
@@ -86,11 +97,16 @@ namespace Backtester {
         
         decimal calculateVOI(bool firstStep);
         
-        decimal calculateOIR();
+        decimal calculateOIR() const;
         
-        decimal calculateMDP(bool firstStep);
+        decimal calculateMPB(bool firstStep);
         
-        decimal calculateBidAskSpread();
+        decimal calculateBidAskSpread() const;
+        
+        // calculates new factors (VOI, OIR, etc. and pushes back to the respective deque's)
+        void pushBackFactors();
+        // pops the front of the factor deque's
+        void popFrontFactors();
         
         // Given a matrix equation y=B*X...
         // observations are the "y" vector, each colvec in features is a column vector of the coefficient matrix B

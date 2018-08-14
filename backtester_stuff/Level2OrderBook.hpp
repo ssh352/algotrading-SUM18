@@ -61,9 +61,9 @@ namespace Backtester
         std::vector<std::pair<decimal, decimal>> nClosestBids(size_t n);
         decimal midPrice;
         
-        std::pair<decimal, decimal> getBestBid();
+        std::pair<decimal, decimal> getBestBid() const;
         
-        std::pair<decimal, decimal> getBestAsk();
+        std::pair<decimal, decimal> getBestAsk() const;
       
         decimal getMidPrice();
         
