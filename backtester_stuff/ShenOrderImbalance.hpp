@@ -48,6 +48,8 @@ namespace Backtester {
         // the csv object the L2OrderBook object will reference
         std::shared_ptr<Gem_CSV_File> csv;
         
+        size_t csvIndex;
+        
         // the orderbook corresponding to the current UTC date, this will need to be reinitialized for every passing day
         Level2OrderBook book;
         
@@ -78,7 +80,7 @@ namespace Backtester {
         
         decimal currentVOI;
         decimal currentOIR;
-        decimal currentMDP;
+        decimal currentMPB;
         decimal currentBidAskSpread;
         
         const unsigned numLaggedTicks;
@@ -107,6 +109,9 @@ namespace Backtester {
         void pushBackFactors();
         // pops the front of the factor deque's
         void popFrontFactors();
+        
+        // process next CSV on rollover to next day
+        void ProcessNextCSV();
         
         // Given a matrix equation y=B*X...
         // observations are the "y" vector, each colvec in features is a column vector of the coefficient matrix B
