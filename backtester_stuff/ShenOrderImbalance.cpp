@@ -9,6 +9,7 @@
 #include "ShenOrderImbalance.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <exception>
 #include <fstream>
 #include <boost/filesystem.hpp>
@@ -24,7 +25,7 @@ namespace Backtester {
     // dataDir should be the path to a directory containing only CBOE Gemini orderbook data csv's, will fill
     // dataFiles with an std::string corresponding to each file in dataDir
     ShenOrderImbalance::ShenOrderImbalance(std::string dataDir)
-    : Engine(), takerFee("0.003"), firstStep(true)
+    : Engine(), takerFee("0.003"), firstStep(true), warmedUp(false), minForecastDelta("0.01"), numLaggedTicks(50), csvIndex(0)
     {
         std::vector<std::string> tmpVec;
         
@@ -40,7 +41,8 @@ namespace Backtester {
     }
     ShenOrderImbalance::ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, decimal _takerFee,
                                            std::string dataDir)
-    : Engine(_LATENCY, _lockoutLength), takerFee(_takerFee), firstStep(true)
+    : Engine(_LATENCY, _lockoutLength), takerFee(_takerFee), firstStep(true), warmedUp(false), minForecastDelta("0.01"), csvIndex(0),
+      numLaggedTicks(50)
     {
         for (auto& p : fs::directory_iterator(dataDir))
         {
@@ -52,14 +54,16 @@ namespace Backtester {
     
     // here the ctor is passed the actual list of (sorted chronologically) files to use
     ShenOrderImbalance::ShenOrderImbalance(std::vector<std::string> _dataFiles)
-    : Engine(), dataFiles(_dataFiles), takerFee("0.003"), firstStep(true)
+    : Engine(), dataFiles(_dataFiles), takerFee("0.003"), firstStep(true), warmedUp(false), minForecastDelta("0.01"), csvIndex(0),
+      numLaggedTicks(10)
     {
         // process csv files
     }
     
     ShenOrderImbalance::ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, decimal _takerFee,
                                            std::vector<std::string> _dataFiles)
-    : Engine (_LATENCY, _lockoutLength), dataFiles(_dataFiles), takerFee(_takerFee), firstStep(true)
+    : Engine (_LATENCY, _lockoutLength), dataFiles(_dataFiles), takerFee(_takerFee), firstStep(true), warmedUp(false), csvIndex(0),
+      numLaggedTicks(10)
     {
         // process csv files w latency
     }
@@ -77,6 +81,12 @@ namespace Backtester {
         currentTime = boost::posix_time::time_from_string(nextRow["EventDate"] + ' ' + nextRow["EventTime"] + '.'
                                                           + nextRow["EventMillis"]);
         
+        pastBestAsk = book.getBestAsk();
+        pastBestBid = book.getBestBid();
+        
+        Gem_CSV_Row currentLine = csv->removeNextLine();
+        book.processCSVLine(currentLine);
+        
         // calculate VOI
         currentVOI = calculateVOI(firstStep);
         
@@ -84,13 +94,91 @@ namespace Backtester {
         currentOIR = calculateOIR();
         
         // calculate MDP
-        currentMDP = calculateMDP(firstStep);
+        currentMPB = calculateMPB(firstStep);
         
         // calculate instantaneous bid-ask spread
         currentBidAskSpread = calculateBidAskSpread();
+
         
-        pastBestAsk = book.getBestAsk();
-        pastBestBid = book.getBestBid();
+    }
+    
+    // user implemented method that requires data handling logic to be implemented
+    void ShenOrderImbalance::algoLogic()
+    {
+        // if first step we just calculate the pastBestBid/Ask
+        if (firstStep)
+        {
+            calculateVOI(firstStep);
+            calculateMPB(firstStep);
+            return;
+        }
+        // otherwise safe to calculate and push back
+        else
+        {
+            currentVOI = calculateVOI(firstStep);
+            currentOIR = calculateOIR();
+            currentMPB = calculateMPB(firstStep);
+        }
+        
+        pushBackFactors();
+        
+        if (!warmedUp)
+        {
+            assert(VOI.size() <= numLaggedTicks);
+            if (VOI.size() == numLaggedTicks)
+                warmedUp = true;
+            else
+                return;
+        }
+        
+        if (VOI.size() > numLaggedTicks)
+            popFrontFactors();
+    }
+    
+    
+    // user implemented method that determines what happens an order reaches the "exchange" (after some latency)
+    void ShenOrderImbalance::onOrderArrival(Order& order)
+    {
+        // Market order
+        if (order.orderType == OrderTypes::Market)
+        {
+            // market buy
+            if (order.quantityOrdered > 0)
+            {
+                decimal costOfBuy = executeMarketBuy(order) * (decimal(1) + takerFee);
+                if (cash >= costOfBuy)
+                    cash -= costOfBuy;
+                else
+                    std::cerr << "Attempted market purchase of " << order.quantityOrdered << " units but didn't have "
+                              << "enough capital!\n";
+            }
+            // market sell
+            else
+            {
+                cash += executeMarketSell(order) * (decimal(1) - takerFee);
+            }
+        }
+        // Limit order
+        else
+        {
+            throw std::runtime_error("This algorithm shouldn't be submitting limit orders!\n");
+        }
+    }
+    
+    /////////////
+    // PRIVATE //
+    /////////////
+    
+    // computes the total cost of a market buy from walking the book (doesn't actually remove liquidity)
+    decimal ShenOrderImbalance::executeMarketBuy(Order& order)
+    {
+        return book.calculateTotalOrderCost(order.quantityOrdered, true);
+    }
+    
+    // computes the total received fiat from a market sell walking the book (doesn't actually remove liquidity)
+    decimal ShenOrderImbalance::executeMarketSell(Order& order)
+    {
+       return book.calculateTotalOrderCost(order.quantityOrdered, false);
     }
     
     decimal ShenOrderImbalance::calculateVOI(bool firstStep)
@@ -139,7 +227,7 @@ namespace Backtester {
         }
     }
     
-    decimal ShenOrderImbalance::calculateOIR()
+    decimal ShenOrderImbalance::calculateOIR() const
     {
         std::pair<decimal,decimal> currentBestAsk = book.getBestAsk();
         std::pair<decimal,decimal> currentBestBid = book.getBestBid();
@@ -147,9 +235,9 @@ namespace Backtester {
         return (currentBestBid.second - currentBestAsk.second)/(currentBestBid.second + currentBestAsk.second);
     }
     
-    decimal ShenOrderImbalance::calculateMDP(bool firstStep)
+    decimal ShenOrderImbalance::calculateMPB(bool firstStep)
     {
-        if(firstStep)
+        if (firstStep)
         {
             pastMidPrice = book.getMidPrice();
             // set pastTransactionVolume
@@ -158,7 +246,7 @@ namespace Backtester {
             secondStep = true;
             return -1;
         }
-        else if(secondStep)
+        else if (secondStep)
         {
             decimal temp = pastMidPrice;
             pastMidPrice = book.getMidPrice();
@@ -174,60 +262,34 @@ namespace Backtester {
         }
     }
     
-    decimal ShenOrderImbalance::calculateBidAskSpread()
+    decimal ShenOrderImbalance::calculateBidAskSpread() const
     {
         return book.getBestAsk().first - book.getBestBid().first;
     }
     
-    // user implemented method that requires data handling logic to be implemented
-    void ShenOrderImbalance::algoLogic()
+    void ShenOrderImbalance::pushBackFactors()
     {
-        
+        VOI.push_back(currentVOI);
+        OIR.push_back(currentOIR);
+        MPB.push_back(currentMPB);
     }
     
-    // user implemented method that determines what happens an order reaches the "exchange" (after some latency)
-    void ShenOrderImbalance::onOrderArrival(Order& order)
+    void ShenOrderImbalance::popFrontFactors()
     {
-        // Market order
-        if (order.orderType == OrderTypes::Market)
+        VOI.pop_front();
+        OIR.pop_front();
+        MPB.pop_front();
+    }
+    
+    void ShenOrderImbalance::ProcessNextCSV()
+    {
+        ++csvIndex;
+        if(csvIndex < dataFiles.size())
         {
-            // market buy
-            if (order.quantityOrdered > 0)
-            {
-                decimal costOfBuy = executeMarketBuy(order) * (decimal(1) + takerFee);
-                if (cash >= costOfBuy)
-                    cash -= costOfBuy;
-                else
-                    std::cerr << "Attempted market purchase of " << order.quantityOrdered << " units but didn't have "
-                              << "enough capital!\n";
-            }
-            // market sell
-            else
-            {
-                cash += executeMarketSell(order) * (decimal(1) - takerFee);
-            }
+            std::ifstream in_f(dataFiles[csvIndex]);
+            csv = std::make_shared<Gem_CSV_File>(in_f);
+            book = Level2OrderBook(csv);
         }
-        // Limit order
-        else
-        {
-            throw std::runtime_error("This algorithm shouldn't be submitting limit orders!\n");
-        }
-    }
-    
-    /////////////
-    // PRIVATE //
-    /////////////
-    
-    // computes the total cost of a market buy from walking the book (doesn't actually remove liquidity)
-    decimal ShenOrderImbalance::executeMarketBuy(Order& order)
-    {
-        return book.calculateTotalOrderCost(order.quantityOrdered, true);
-    }
-    
-    // computes the total received fiat from a market sell walking the book (doesn't actually remove liquidity)
-    decimal ShenOrderImbalance::executeMarketSell(Order& order)
-    {
-       return book.calculateTotalOrderCost(order.quantityOrdered, false);
     }
     
     // Given a matrix equation y=B*X...

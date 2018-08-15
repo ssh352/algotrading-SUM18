@@ -13,6 +13,7 @@
 #include <memory>
 #include <stdio.h>
 #include <vector>
+#include <deque>
 
 #include "Engine.hpp"
 #include "CSV_File.hpp"
@@ -47,6 +48,8 @@ namespace Backtester {
         // the csv object the L2OrderBook object will reference
         std::shared_ptr<Gem_CSV_File> csv;
         
+        size_t csvIndex;
+        
         // the orderbook corresponding to the current UTC date, this will need to be reinitialized for every passing day
         Level2OrderBook book;
         
@@ -62,8 +65,12 @@ namespace Backtester {
         // fee (in absolute rate, eg 3% = 0.03) that the exchange enforces for taking liquidity from the book
         decimal takerFee;
         
+        // the minimum forecasted change needed to justify a change in position (denominated in USD)
+        const decimal minForecastDelta;
+        
         bool firstStep;
         bool secondStep;
+        bool warmedUp;
         std::pair<decimal, decimal> pastBestBid;
         std::pair<decimal, decimal> pastBestAsk;
         decimal pastMidPrice;
@@ -73,8 +80,14 @@ namespace Backtester {
         
         decimal currentVOI;
         decimal currentOIR;
-        decimal currentMDP;
+        decimal currentMPB;
         decimal currentBidAskSpread;
+        
+        const unsigned numLaggedTicks;
+        
+        std::deque<decimal> VOI;
+        std::deque<decimal> OIR;
+        std::deque<decimal> MPB;
         
         // METHODS //
         
@@ -86,11 +99,19 @@ namespace Backtester {
         
         decimal calculateVOI(bool firstStep);
         
-        decimal calculateOIR();
+        decimal calculateOIR() const;
         
-        decimal calculateMDP(bool firstStep);
+        decimal calculateMPB(bool firstStep);
         
-        decimal calculateBidAskSpread();
+        decimal calculateBidAskSpread() const;
+        
+        // calculates new factors (VOI, OIR, etc. and pushes back to the respective deque's)
+        void pushBackFactors();
+        // pops the front of the factor deque's
+        void popFrontFactors();
+        
+        // process next CSV on rollover to next day
+        void ProcessNextCSV();
         
         // Given a matrix equation y=B*X...
         // observations are the "y" vector, each colvec in features is a column vector of the coefficient matrix B

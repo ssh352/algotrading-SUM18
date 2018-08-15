@@ -329,12 +329,12 @@ namespace Backtester {
         midPrice = (bestBid->first + bestAsk->first) / 2;
     }
     
-    std::pair<decimal, decimal> Level2OrderBook::getBestBid()
+    std::pair<decimal, decimal> Level2OrderBook::getBestBid() const
     {
         return *bestBid;
     }
     
-    std::pair<decimal, decimal> Level2OrderBook::getBestAsk()
+    std::pair<decimal, decimal> Level2OrderBook::getBestAsk() const
     {
         return *bestAsk;
     }

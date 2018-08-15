@@ -9,61 +9,63 @@
 #include "CSV_File.hpp"
 #include <iostream>
 
-using namespace Backtester;
-
-// Default Constructor
-Gem_CSV_File::Gem_CSV_File()
-{}
-
-// istream Constructor
-Gem_CSV_File::Gem_CSV_File(std::istream& in_f)
-{
-    Gem_CSV_Row row;
-    std::string tmp;
-    getline(in_f, tmp); // getting rid of header
-    while (in_f >> row)
-    {
-        rows.push(row);
-//        row.PrintRow();
-    }
-}
-
-// Copy Constructor
-Gem_CSV_File::Gem_CSV_File(const Gem_CSV_File & other):rows(other.rows){}
-
-
-Gem_CSV_Row Gem_CSV_File::removeNextLine()
-{
-    Gem_CSV_Row temp = rows.front();
-    rows.pop();
-    return temp;
-}
-
-const Gem_CSV_Row& Gem_CSV_File::peekNextLine() const
-{
-    return rows.front();
-}
-
-std::vector<Gem_CSV_Row> Gem_CSV_File::removeInitials()
-{
-    std::vector<Gem_CSV_Row> initials;
+namespace Backtester {
     
-    while (rows.front()["EventType"] == "Initial")
+    // Default Constructor
+    Gem_CSV_File::Gem_CSV_File()
+    {}
+
+    // istream Constructor
+    Gem_CSV_File::Gem_CSV_File(std::istream& in_f)
     {
-        initials.push_back(removeNextLine());
+        Gem_CSV_Row row;
+        std::string tmp;
+        getline(in_f, tmp); // getting rid of header
+        while (in_f >> row)
+        {
+            rows.push(row);
+    //        row.PrintRow();
+        }
+    }
+
+    // Copy Constructor
+    Gem_CSV_File::Gem_CSV_File(const Gem_CSV_File & other):rows(other.rows){}
+
+
+    Gem_CSV_Row Gem_CSV_File::removeNextLine()
+    {
+        Gem_CSV_Row temp = rows.front();
+        rows.pop();
+        return temp;
+    }
+
+    const Gem_CSV_Row& Gem_CSV_File::peekNextLine() const
+    {
+        return rows.front();
+    }
+
+    std::vector<Gem_CSV_Row> Gem_CSV_File::removeInitials()
+    {
+        std::vector<Gem_CSV_Row> initials;
+        
+        while (rows.front()["EventType"] == "Initial")
+        {
+            initials.push_back(removeNextLine());
+        }
+        
+        return initials;
+    }
+
+    size_t Gem_CSV_File::getNumRows() const
+    {
+        return rows.size();
+    }
+
+    bool Gem_CSV_File::empty() const
+    {
+        return !getNumRows();
     }
     
-    return initials;
-}
-
-size_t Gem_CSV_File::getNumRows() const
-{
-    return rows.size();
-}
-
-bool Gem_CSV_File::empty() const
-{
-    return !getNumRows();
 }
 
 
