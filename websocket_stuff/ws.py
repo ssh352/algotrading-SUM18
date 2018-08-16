@@ -24,6 +24,7 @@ def sig_handler(sig, frame):
     logging.warning(f"Possible loss of connection, exiting with signal {signal.Signals(sig).name}")
     sys.exit(1)
 
+
 # Here we are going to specify the two (or more) channels that we
 # want to subscribe to, where subtype is "level 2" currently and send that info to our websocket
 def on_open(ws: CoinbaseProAdaptedWS):
@@ -38,7 +39,7 @@ def on_open(ws: CoinbaseProAdaptedWS):
             {
                 "name": "heartbeat",
                 "product_ids": [
-                    "ETH-USD"
+                    "BTC-USD"
                 ],
             },
         ]
@@ -173,7 +174,7 @@ def main(**kwargs):
                               on_message=on_message,
                               on_error=on_error,
                               on_close=on_close,
-                              symbols=["BTC-USD", "ETH-USD", "LTC-USD", "BCH-USD"],
+                              symbols=["BTC-USD", "ETH-USD"],
                               subtype="full",
                               **kwargs)
     logging.info("Socket initialized")
