@@ -25,7 +25,7 @@ namespace Backtester {
     // dataDir should be the path to a directory containing only CBOE Gemini orderbook data csv's, will fill
     // dataFiles with an std::string corresponding to each file in dataDir
     ShenOrderImbalance::ShenOrderImbalance(std::string dataDir)
-    : Engine(), takerFee("0.003"), firstStep(true), warmedUp(false), minForecastDelta("0.01"), numLaggedTicks(50)
+    : Engine(), takerFee("0.003"), firstStep(true), warmedUp(false), minForecastDelta("0.01"), numLaggedTicks(50), csvIndex(0)
     {
         std::vector<std::string> tmpVec;
         
@@ -41,7 +41,7 @@ namespace Backtester {
     }
     ShenOrderImbalance::ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, decimal _takerFee,
                                            std::string dataDir)
-    : Engine(_LATENCY, _lockoutLength), takerFee(_takerFee), firstStep(true), warmedUp(false), minForecastDelta("0.01"),
+    : Engine(_LATENCY, _lockoutLength), takerFee(_takerFee), firstStep(true), warmedUp(false), minForecastDelta("0.01"), csvIndex(0),
       numLaggedTicks(50)
     {
         for (auto& p : fs::directory_iterator(dataDir))
@@ -54,7 +54,7 @@ namespace Backtester {
     
     // here the ctor is passed the actual list of (sorted chronologically) files to use
     ShenOrderImbalance::ShenOrderImbalance(std::vector<std::string> _dataFiles)
-    : Engine(), dataFiles(_dataFiles), takerFee("0.003"), firstStep(true), warmedUp(false), minForecastDelta("0.01"),
+    : Engine(), dataFiles(_dataFiles), takerFee("0.003"), firstStep(true), warmedUp(false), minForecastDelta("0.01"), csvIndex(0),
       numLaggedTicks(10)
     {
         // process csv files
@@ -62,7 +62,7 @@ namespace Backtester {
     
     ShenOrderImbalance::ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, decimal _takerFee,
                                            std::vector<std::string> _dataFiles)
-    : Engine (_LATENCY, _lockoutLength), dataFiles(_dataFiles), takerFee(_takerFee), firstStep(true), warmedUp(false),
+    : Engine (_LATENCY, _lockoutLength), dataFiles(_dataFiles), takerFee(_takerFee), firstStep(true), warmedUp(false), csvIndex(0),
       numLaggedTicks(10)
     {
         // process csv files w latency
@@ -94,7 +94,7 @@ namespace Backtester {
         currentOIR = calculateOIR();
         
         // calculate MDP
-        currentMDP = calculateMPB(firstStep);
+        currentMPB = calculateMPB(firstStep);
         
         // calculate instantaneous bid-ask spread
         currentBidAskSpread = calculateBidAskSpread();
@@ -105,11 +105,19 @@ namespace Backtester {
     // user implemented method that requires data handling logic to be implemented
     void ShenOrderImbalance::algoLogic()
     {
-        if (!firstStep)
+        // if first step we just calculate the pastBestBid/Ask
+        if (firstStep)
         {
             calculateVOI(firstStep);
             calculateMPB(firstStep);
             return;
+        }
+        // otherwise safe to calculate and push back
+        else
+        {
+            currentVOI = calculateVOI(firstStep);
+            currentOIR = calculateOIR();
+            currentMPB = calculateMPB(firstStep);
         }
         
         pushBackFactors();
@@ -261,9 +269,9 @@ namespace Backtester {
     
     void ShenOrderImbalance::pushBackFactors()
     {
-        VOI.push_back(calculateVOI(firstStep));
-        OIR.push_back(calculateOIR());
-        MPB.push_back(calculateMPB(firstStep));
+        VOI.push_back(currentVOI);
+        OIR.push_back(currentOIR);
+        MPB.push_back(currentMPB);
     }
     
     void ShenOrderImbalance::popFrontFactors()
@@ -273,7 +281,18 @@ namespace Backtester {
         MPB.pop_front();
     }
     
-    // Given a matrix equation y=X*B...
+    void ShenOrderImbalance::ProcessNextCSV()
+    {
+        ++csvIndex;
+        if(csvIndex < dataFiles.size())
+        {
+            std::ifstream in_f(dataFiles[csvIndex]);
+            csv = std::make_shared<Gem_CSV_File>(in_f);
+            book = Level2OrderBook(csv);
+        }
+    }
+    
+    // Given a matrix equation y=B*X...
     // observations are the "y" vector, each colvec in features is a column vector of the coefficient matrix B
     // NOTE: the dimensions of each colvec MUST be the same
     arma::mat ShenOrderImbalance::getLinRegCoefficients(arma::mat observations, std::vector<arma::colvec> features)
