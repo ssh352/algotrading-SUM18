@@ -108,8 +108,9 @@ namespace Backtester {
         // pops the front of the factor deque's
         void popFrontFactors();
         
-        // Given a matrix equation y=B*X...
+        // Given a matrix equation y=X*B...
         // observations are the "y" vector, each colvec in features is a column vector of the coefficient matrix B
+        // NOTE: the dimensions of each colvec MUST be the same
         arma::mat getLinRegCoefficients(arma::mat observations, std::vector<arma::colvec> features);
         // observations are the "y" vector, features is the coefficient matrix B
         arma::mat getLinRegCoefficients(arma::mat observations, arma::mat features);

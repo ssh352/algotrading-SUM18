@@ -273,8 +273,9 @@ namespace Backtester {
         MPB.pop_front();
     }
     
-    // Given a matrix equation y=B*X...
+    // Given a matrix equation y=X*B...
     // observations are the "y" vector, each colvec in features is a column vector of the coefficient matrix B
+    // NOTE: the dimensions of each colvec MUST be the same
     arma::mat ShenOrderImbalance::getLinRegCoefficients(arma::mat observations, std::vector<arma::colvec> features)
     {
         arma::mat X(0, features.size());

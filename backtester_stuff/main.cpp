@@ -21,19 +21,22 @@
 #include <initializer_list>
 #include <vector>
 #include <algorithm>
+#include <memory>
 #include <sstream>
 #include <string>
 
 using namespace Backtester;
 using namespace boost::posix_time;
+using namespace std;
 namespace fs = boost::filesystem;
-using std::string;
 
 int main(int argc, const char * argv[]) {
     typedef boost::multiprecision::cpp_dec_float_50 decimal;
-    std::cout << std::setprecision(std::numeric_limits<double>::max_digits10);
-    decimal d = std::numeric_limits<decimal>::quiet_NaN();
-    std::cout << d << std::endl;
+//    ifstream in_f("BTCUSD_order_book_20180228.csv");
+//    shared_ptr<Gem_CSV_File> g = make_shared<Gem_CSV_File>(in_f);
+    
+    
+    cout << sizeof(decimal) << endl << sizeof(int) << endl << sizeof(double) << endl;
 //    std::ifstream in_f ("mtcars.csv");
 //    std::cout << (in_f.is_open() ? "Open" : "Closed") << std::endl;
 //    arma::mat X(0, 3);
