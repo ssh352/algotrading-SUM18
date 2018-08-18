@@ -65,7 +65,7 @@ namespace Backtester
         
         std::pair<decimal, decimal> getBestAsk() const;
       
-        decimal getMidPrice();
+        decimal getMidPrice() const;
         
         decimal calculateTotalOrderCost(decimal quantity, bool buy);
     

@@ -47,7 +47,10 @@ namespace Backtester
         
         unsigned long numPeriods = 0;
         
-        /* this is just an idea... But to prevent overestimation of profits, might be a good idea to not allow the algo to do too many trades in a short time. This is because in reality we'd have at most a few trades before we move the price too much, but in this backtester we can't really simulate this (as this would require some crazy fucking meth). This bool will tell the derived class that we implement whether we're allowed to trade.
+        /* this is just an idea... But to prevent overestimation of profits, might be a good idea to not allow the algo
+         to do too many trades in a short time. This is because in reality we'd have at most a few trades before we move
+          the price too much, but in this backtester we can't really simulate this (as this would require some crazy
+         fucking meth). This bool will tell the derived class that we implement whether we're allowed to trade.
          */
         
         bool inLockoutPeriod;
@@ -78,6 +81,10 @@ namespace Backtester
         
         // resolves an orders that have arrived after the next timestep has arrived and before any further algo logic
         void resolveOrders();
+        
+        // user implemented method that defines the logic that takes place at the start of the simulation, this can include
+        // the "warm up" stuff like gathering linear regression coefficients to use
+        virtual void onInitialize() = 0;
         
         // what to do at the next "step", immediately after a new timestamp is entered, this includes setting currentTime
         // Also anything else specific to the BACKTESTER such as latency handling and keeping track of PnL in PNL_curve.

@@ -225,12 +225,12 @@ namespace Backtester {
 
     void Level2OrderBook::processCSVLine(const Gem_CSV_Row& line)
     {
-        std::string type = line["EventType"];
+        const std::string& type = line["EventType"];
         
         // if order type is place we add to price level specified
         if (type == "Place")
         {
-            addToPriceLevel(decimal(line["LimtPrice"]), decimal(line["OriginalQ"]));
+            addToPriceLevel(decimal(line["LimitPrice"]), decimal(line["OriginalQ"]));
         }
         // if order type is cancel we remove but DO NOT fill
         else if (type == "Cancel")
@@ -314,7 +314,7 @@ namespace Backtester {
         return totalCost;
     }
     
-    decimal Level2OrderBook::getMidPrice()
+    decimal Level2OrderBook::getMidPrice() const
     {
         return midPrice;
     }

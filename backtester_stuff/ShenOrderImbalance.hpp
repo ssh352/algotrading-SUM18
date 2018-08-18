@@ -33,6 +33,9 @@ namespace Backtester {
         ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, decimal _takerFee, std::vector<std::string> _dataFiles);
     protected:
         
+        // user implemented method that defines the logic that takes place at the start of the simulation, this can include
+        // the "warm up" stuff like gathering linear regression coefficients to use
+        void onInitialize() override;
         /* what to do at the next "step", immediately after a new timestamp is entered, this includes setting currentTime, also anything else specific to the BACKTESTER such as latency handling andkeeping track of PnL in PNL_curve.
          */
         void onStep() override;
@@ -67,6 +70,8 @@ namespace Backtester {
         
         // the minimum forecasted change needed to justify a change in position (denominated in USD)
         const decimal minForecastDelta;
+        // window (in ticks) that we try to forecast price change over
+        const unsigned forecastWindow;
         
         bool firstStep;
         bool secondStep;
@@ -82,6 +87,7 @@ namespace Backtester {
         decimal currentOIR;
         decimal currentMPB;
         decimal currentBidAskSpread;
+        decimal currentAverageTradePrice;
         
         const unsigned numLaggedTicks;
         
@@ -111,7 +117,7 @@ namespace Backtester {
         void popFrontFactors();
         
         // process next CSV on rollover to next day
-        void ProcessNextCSV();
+        void processNextCSV();
         
         // Given a matrix equation y=B*X...
         // observations are the "y" vector, each colvec in features is a column vector of the coefficient matrix B

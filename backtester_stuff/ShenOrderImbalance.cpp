@@ -15,6 +15,8 @@
 #include <boost/filesystem.hpp>
 #include <vector>
 
+// TODO remove magic numbers
+
 namespace fs = boost::filesystem;
 namespace Backtester {
     
@@ -25,11 +27,17 @@ namespace Backtester {
     // dataDir should be the path to a directory containing only CBOE Gemini orderbook data csv's, will fill
     // dataFiles with an std::string corresponding to each file in dataDir
     ShenOrderImbalance::ShenOrderImbalance(std::string dataDir)
-    : Engine(), takerFee("0.003"), firstStep(true), warmedUp(false), minForecastDelta("0.01"), numLaggedTicks(50), csvIndex(0)
+    : ShenOrderImbalance(200, 60, decimal("0.003"), dataDir) // initialize with 200ms latency and 60s lockout by default
+    {        
+ 
+    }
+    
+    ShenOrderImbalance::ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, decimal _takerFee,
+                                           std::string dataDir)
+    : Engine(_LATENCY, _lockoutLength), takerFee(_takerFee), firstStep(true), warmedUp(false), minForecastDelta("0.01"), csvIndex(0),
+      numLaggedTicks(50), forecastWindow(100), currentAverageTradePrice(decimal("0.0"))
     {
-        std::vector<std::string> tmpVec;
-        
-        for (fs::directory_entry& d: fs::directory_iterator(dataDir))
+        for (fs::directory_entry& d : fs::directory_iterator(dataDir))
         {
             dataFiles.push_back(d.path().native());
         }
@@ -39,23 +47,10 @@ namespace Backtester {
         csv = std::make_shared<Gem_CSV_File>(in_f);
         book = Level2OrderBook(csv);
     }
-    ShenOrderImbalance::ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, decimal _takerFee,
-                                           std::string dataDir)
-    : Engine(_LATENCY, _lockoutLength), takerFee(_takerFee), firstStep(true), warmedUp(false), minForecastDelta("0.01"), csvIndex(0),
-      numLaggedTicks(50)
-    {
-        for (auto& p : fs::directory_iterator(dataDir))
-        {
-            dataFiles.push_back(p.path().native());
-        }
-        
-        std::sort(dataFiles.begin(), dataFiles.end());
-    }
     
     // here the ctor is passed the actual list of (sorted chronologically) files to use
     ShenOrderImbalance::ShenOrderImbalance(std::vector<std::string> _dataFiles)
-    : Engine(), dataFiles(_dataFiles), takerFee("0.003"), firstStep(true), warmedUp(false), minForecastDelta("0.01"), csvIndex(0),
-      numLaggedTicks(10)
+    : ShenOrderImbalance(200, 60, decimal("0.003"), _dataFiles)
     {
         // process csv files
     }
@@ -63,7 +58,7 @@ namespace Backtester {
     ShenOrderImbalance::ShenOrderImbalance(unsigned _LATENCY, unsigned _lockoutLength, decimal _takerFee,
                                            std::vector<std::string> _dataFiles)
     : Engine (_LATENCY, _lockoutLength), dataFiles(_dataFiles), takerFee(_takerFee), firstStep(true), warmedUp(false), csvIndex(0),
-      numLaggedTicks(10)
+      numLaggedTicks(50), forecastWindow(100), currentAverageTradePrice(decimal("0.0"))
     {
         // process csv files w latency
     }
@@ -71,6 +66,64 @@ namespace Backtester {
     ///////////////
     // PROTECTED //
     ///////////////
+    
+    void ShenOrderImbalance::onInitialize()
+    {
+        // TODO calculate the first day's factors and then acquire the coefficients for the regression model
+        std::vector<decimal> daysVOI, daysOIR, daysMPB, daysMidPrice;
+        // this will be the first index where each of the factors has a valid value, mainly need to have MPB defined
+        long long warmedUpIndex = -1;
+        while (true)
+        {
+            daysMidPrice.push_back(book.getMidPrice());
+            daysVOI.push_back(calculateVOI(firstStep));
+            daysOIR.push_back(calculateOIR());
+            daysMPB.push_back(calculateMPB(firstStep));
+            // MPB is most likely going to be the last factor that becomes defined since OIR is instaneous and VOI
+            // is defined on the second tick
+            if (warmedUpIndex == -1 && daysMPB.back() != std::numeric_limits<decimal>::quiet_NaN())
+                warmedUpIndex = daysMPB.size() - 1;
+            
+            try
+            {
+                book.processCSVLine(csv->peekNextLine());
+                csv->removeNextLine();
+            }
+            catch (...) // probably poor style to catch every single exception but eh
+            {
+                break;
+            }
+        }
+        firstStep = true;
+        secondStep = false;
+
+        // calculating change in mid-price between each event
+        for (size_t i = 1; i < daysMidPrice.size(); ++i)
+        {
+            daysMidPrice[i] = daysMidPrice[i] - daysMidPrice[i-1];
+        }
+        daysMidPrice.front() = 0;
+        
+        // if MPB is defined on the first tick of the day, we need to advance the index so that VOI is defined
+        if (!warmedUpIndex)
+            ++warmedUpIndex;
+        
+        assert(!daysMidPrice.empty() && warmedUpIndex > 0 && warmedUpIndex < daysMidPrice.size());
+        
+        std::vector<decimal> avgMidChanges;
+        
+        // I'm worried about numerical precision here. We are using high precision decimal class but still.....
+        for (size_t i = warmedUpIndex + numLaggedTicks - 1; i < daysMidPrice.size() - forecastWindow; ++i)
+        {
+            // see page 22 in Shen, the formula for the "k-step average mid-price change"
+            avgMidChanges.push_back(std::accumulate(daysMidPrice.begin() + i + 1,
+                                                    daysMidPrice.begin() + i + forecastWindow + 1,
+                                                    decimal("0"), [i, &daysMidPrice](decimal a, decimal b){
+                                                        return a + b - daysMidPrice[i];
+                                                    }) / forecastWindow);
+        }
+        
+    }
     
     // what to do at the next "step", immediately after a new timestamp is entered, this includes setting currentTime
     // Also anything else specific to the BACKTESTER such as latency handling and keeping track of PnL in PNL_curve.
@@ -181,13 +234,14 @@ namespace Backtester {
        return book.calculateTotalOrderCost(order.quantityOrdered, false);
     }
     
+    // returns std::numeric_limits<decimal>::quiet_NaN() if not defined
     decimal ShenOrderImbalance::calculateVOI(bool firstStep)
     {
         if (firstStep)
         {
             pastBestAsk = book.getBestAsk();
             pastBestBid = book.getBestBid();
-            return -1;
+            return std::numeric_limits<decimal>::quiet_NaN();
         }
         else
         {
@@ -235,6 +289,7 @@ namespace Backtester {
         return (currentBestBid.second - currentBestAsk.second)/(currentBestBid.second + currentBestAsk.second);
     }
     
+    // returns std::numeric_limits<decimal>::quiet_NaN() if not defined
     decimal ShenOrderImbalance::calculateMPB(bool firstStep)
     {
         if (firstStep)
@@ -244,7 +299,7 @@ namespace Backtester {
             // set pastTradeVolumeCurrency
             firstStep = false;
             secondStep = true;
-            return -1;
+            return std::numeric_limits<decimal>::quiet_NaN();
         }
         else if (secondStep)
         {
@@ -258,7 +313,7 @@ namespace Backtester {
         else
         {
             // calculate MDP (average trade price at time t - Mid price average of t,t-1)
-            return -1;
+            return std::numeric_limits<decimal>::quiet_NaN();
         }
     }
     
@@ -281,10 +336,10 @@ namespace Backtester {
         MPB.pop_front();
     }
     
-    void ShenOrderImbalance::ProcessNextCSV()
+    void ShenOrderImbalance::processNextCSV()
     {
         ++csvIndex;
-        if(csvIndex < dataFiles.size())
+        if (csvIndex < dataFiles.size())
         {
             std::ifstream in_f(dataFiles[csvIndex]);
             csv = std::make_shared<Gem_CSV_File>(in_f);
