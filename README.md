@@ -27,16 +27,16 @@ https://boto3.readthedocs.io/en/latest/
         a.For windows maybe? if c:/User/yourusername/
         b. See https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html
     2. Create folder called .aws thru mkdir,
-    windows has to do some funky shit because it doesnt allow folders that start with '.'
-    3. Change directory into that muthafucka .aws
-    4. Create a file called credentials via touch or some shit
+    windows has to do some funky stuff because it doesnt allow folders that start with '.'
+    3. Change directory into .aws
+    4. Create a file called credentials via touch
         Write stuff between quotes into file, keys are below in 'Credentials for AWS'
         "
         [default]
         aws_access_key_id = YOUR_ACCESS_KEY
         aws_secret_access_key = YOUR_SECRET_KEY
         "
-    5. You done bitch we outtie, use boto3 as u want
+    5. You done we outtie, use boto3 as u want
     4. See link below if confused
         https://boto3.readthedocs.io/en/latest/guide/quickstart.html#installation
         
@@ -52,8 +52,7 @@ List of dependencies (use `homebrew` to install)
 Credentials for AWS:
 general_credentials.csv contains the public and private api keys.
 Also contains user and pass, will rewrite here:
-User: hftboi
-Password:summer2018
+
 Link: https://558727307631.signin.aws.amazon.com/console
 Public and private keys in csv
 
